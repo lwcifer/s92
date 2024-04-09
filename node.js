@@ -3,6 +3,9 @@ const fs = require('fs');
 const {parseString} = require('xml2js')
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
+const { DETInputFormat, MOTInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
+const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
+
 
 // Define input and output filenames
 const inputVideo = 'video_test.mp4';
@@ -10,21 +13,8 @@ const outputFramesDir = 'frames';
 const outputVideo = 'videos/output_video.mp4';
 const fps = 10;
 
-const inputDir = 'C:/Users/PC/Downloads/20240320';
+const inputDir = 'C:/Users/PC/Downloads/input';
 const outDir = 'C:/Users/PC/Documents/s92';
-
-const txtFormat = {
-    'frameNo': 0,
-    'name': 1,
-    'id': 2,
-    'minx': 3,
-    'miny': 4,
-    'width': 5,
-    'height': 6
-}
-
-const DETFormat = ['bbox_cx', 'bbox_cy', 'bbox_width', 'bbox_height', 'score', 'object_category', 'object_subcategory', 'truncation', 'occlusion'];
-const MOTFormat = ['frame_index', 'target_id', 'bbox_cx', 'bbox_cy', 'bbox_width', 'bbox_height', 'score', 'object_category', 'object_subcategory', 'truncation', 'occlusion'];
 
 // Create a canvas and context
 const canvas = createCanvas(500, 500);
@@ -69,44 +59,130 @@ function createBaseForder(outDir) {
     })
 }
 
-function processLine(line, format) {
+function processDETLine(line) {
     // Split the line by comma ','
     const values = line.split(',').map(value => value.trim());
-    const cx = 1*values[txtFormat.minx] + values[txtFormat.width]/2;
-    const cy = 1*values[txtFormat.miny] + values[txtFormat.height]/2;
+    const cx = (1*values[DETInputFormat.minx] + values[DETInputFormat.minx]*1)/2;
+    const cy = (1*values[DETInputFormat.miny] + 1*values[DETInputFormat.miny])/2;
    
     const newValues = {
-        'frame_index': values[txtFormat.frameNo],
-        'target_id': `${values[txtFormat.name]}_${values[txtFormat.id]}`,
         'bbox_cx': cx,
         'bbox_cy': cy,
-        'bbox_width': values[txtFormat.width],
-        'bbox_height': values[txtFormat.height],
+        'bbox_width': 1*values[DETInputFormat.maxx] - 1*values[DETInputFormat.minx],
+        'bbox_height': 1*values[DETInputFormat.maxy] - 1*values[DETInputFormat.miny],
         'score': 0,
-        'object_category': 1,
+        'object_category': values[DETInputFormat.cat] || 1,
         'object_subcategory': 1,
         'truncation': 0,
         'occlusion': 0
     }
     // Join the values back with comma ','
-    return format.map(item => newValues[item]);
+    return DETOutputFormat.map(item => newValues[item]);
 }
 
-function convertTxtToDet (fileURL, DETFormat) {
+// Function to calculate the time difference between two timestamps
+function timeDifference(t1, t2) {
+    return Math.abs(new Date(t1) - new Date(t2));
+}
+
+function frameIndexToTime(startTime, index) {
+    const timestamp = (index / 50) * 1000
+    const date = new Date(startTime)
+    const timestampFromDateString = date.getTime() + timestamp
+    return timestampFromDateString
+}
+
+let indexOfFrame = 1;
+function convertTxtToDet (fileURL) {
     // Read the file content synchronously
     const fileContent = fs.readFileSync(fileURL, 'utf8');
     const fileName = path.basename(fileURL).split('.');
     // Split the file content by new line character '\n'
     const lines = fileContent.trim().split('\n');
 
+
+    //get Content metadata klv
+    const fileKLVContent = fs.readFileSync(`${inputDir}/metadata_klv.csv`, 'utf8');
+    const linesKLV = fileKLVContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
+
+    //get content metadata ppk
+    const filePPKContent = fs.readFileSync(`${inputDir}/metadata_ppk.csv`, 'utf8');
+    const linesPPK = filePPKContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
+
+    const timeOfFile = frameIndexToTime(linesKLV[1][0], fileName[0]*1);
+    let minDifference = Infinity;
+    for (let i = indexOfFrame; i < linesKLV.length; i++) {
+        let difference = linesKLV[i] && timeDifference(linesKLV[i][0], timeOfFile);
+        if (difference < minDifference) {
+            minDifference = difference;
+            indexOfFrame = i;
+        }
+    }
+    
+    const contentMetadataKLV = metadataOutputFormat.map(item => {
+        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+    });
+
+    const contentMetadataPPK = metadataOutputFormat.map(item => {
+        if(['sensorLatitude','sensorLongitude','sensorTrueAltitude'].includes(item)) {
+            return PPKInputFormat.indexOf(item) >= 0 ? linesPPK[indexOfFrame][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
+        }
+        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+    });
+
+    if (!fs.existsSync(outDir+'/Train/240321_00001/DET_MOT/001/Meta')) {
+        createDirectory('/Train/240321_00001/DET_MOT/001/Meta')
+    }
+    fs.writeFileSync(outDir+'/Train/240321_00001/DET_MOT/001/Meta' +`/240331_00001_001_${fileName[0].slice(-5)}.txt`, contentMetadataKLV.toString());
+    fs.writeFileSync(outDir+'/Train/240321_00001/DET_MOT/001/Meta' +`/240331_00001_001_${fileName[0].slice(-5)}(PPK).txt`, contentMetadataPPK.toString());
+
     // Process each line and join them with '\n' to form the new content
-    const newContent = lines.map(line => processLine(line, MOTFormat)).join('\n');
+    const newContent = lines.map(line => processDETLine(line)).join('\n');
     const outputFilePath = `/Train/240321_00001/DET_MOT/001/Annotation Det`;
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
     }
-    fs.writeFileSync(outDir+outputFilePath +`/240320_00001_001_${fileName[0].slice(-4)}.txt`, newContent);
+    fs.writeFileSync(outDir+outputFilePath +`/240331_00001_001_${fileName[0].slice(-5)}.txt`, newContent);
+}
 
+
+function processMOTLine(line) {
+    // Split the line by comma ','
+    const values = line.split(',').map(value => value.trim());
+    const cx = 1*values[MOTInputFormat.minx] + values[MOTInputFormat.width]/2;
+    const cy = 1*values[MOTInputFormat.miny] + values[MOTInputFormat.height]/2;
+   
+    const newValues = {
+        'frame_index': values[MOTInputFormat.frameNo],
+        'target_id': `${values[MOTInputFormat.id]}`,
+        'bbox_cx': cx,
+        'bbox_cy': cy,
+        'bbox_width': values[MOTInputFormat.width],
+        'bbox_height': values[MOTInputFormat.height],
+        'score': 0,
+        'object_category': values[MOTInputFormat.cat] || 1,
+        'object_subcategory': 1,
+        'truncation': 0,
+        'occlusion': 0
+    }
+    // Join the values back with comma ','
+    return MOTOutputFormat.map(item => newValues[item]);
+}
+
+function convertTxtToMOT (fileURL) {
+    // Read the file content synchronously
+    const fileContent = fs.readFileSync(fileURL, 'utf8');
+    const fileName = path.basename(fileURL).split('.');
+    // Split the file content by new line character '\n'
+    const lines = fileContent.trim().split('\n');
+    
+    // Process each line and join them with '\n' to form the new content
+    const newContent = lines.map(line => processMOTLine(line)).join('\n');
+    const outputFilePath = `/Train/240321_00001/DET_MOT/001/Annotation MOT`;
+    if (!fs.existsSync(outDir+outputFilePath)) {
+        createDirectory(outputFilePath)
+    }
+    fs.writeFileSync(outDir+outputFilePath +`/240331_00001_001.txt`, newContent);
 }
 
 // Draw text 
@@ -227,24 +303,32 @@ function convertToVideo(outputFramesDir, outputVideo, fps) {
 async function main() {
     try {
         await createBaseForder(outDir);
-        const directoryPath = inputDir + '/TXT_separate';
-        const directoryPathMerged = inputDir + '/TXT_merged';
+        const directoryPathDET = inputDir + '/DET_MOT/TXT';
+        const directoryPathMOT = inputDir + '/DET_MOT/MOT';
         // Read all files in the directory
-        const files = fs.readdirSync(directoryPath);
+        const filesDET = fs.readdirSync(directoryPathDET);
+        const fileMOT = fs.readdirSync(directoryPathMOT);
 
         // Filter out only .txt files
-        const txtFiles = files.filter(file => path.extname(file).toLowerCase() === '.txt');
-
+        const detFiles = filesDET.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
+        console.log('detFiles', detFiles)
         // Process each .txt file
-        txtFiles.forEach(file => {
-            const filePath = path.join(directoryPath, file);
-            convertTxtToDet(filePath);
+        detFiles.forEach(file => {
+            const filePath = path.join(directoryPathDET, file);
+            convertTxtToDet(filePath, DETOutputFormat);
+        });
+
+        const motFiles = fileMOT.filter(file => path.extname(file).toLowerCase() === '.txt');
+        // Process each .txt file
+        motFiles.forEach(file => {
+            const filePath = path.join(directoryPathMOT, file);
+            convertTxtToMOT(filePath, DETOutputFormat);
         });
 
 
-        await convertToFrames(inputVideo, outputFramesDir, fps);
-        await convertXML2JSON('label.xml');
-        await convertToVideo('frames2', outputVideo, fps)
+        // await convertToFrames(inputVideo, outputFramesDir, fps);
+        // await convertXML2JSON('label.xml');
+        // await convertToVideo('frames2', outputVideo, fps)
         console.log('Conversion complete.');
     } catch (error) {
         console.error('Error during conversion:', error);
