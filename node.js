@@ -3,6 +3,9 @@ const fs = require('fs');
 const {parseString} = require('xml2js')
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
+const { DETInputFormat, MOTInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
+const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
+
 
 // Define input and output filenames
 const inputVideo = 'video_test.mp4';
@@ -10,63 +13,8 @@ const outputFramesDir = 'frames';
 const outputVideo = 'videos/output_video.mp4';
 const fps = 10;
 
-const inputDir = 'input';
-const outDir = 's92';
-
-const txtFormat = {
-    'frameNo': 0,
-    'name': 1,
-    'id': 2,
-    'minx': 3,
-    'miny': 4,
-    'width': 5,
-    'height': 6
-}
-
-const DETFormat = ['bbox_cx', 'bbox_cy', 'bbox_width', 'bbox_height', 'score', 'object_category', 'object_subcategory', 'truncation', 'occlusion'];
-const MOTFormat = ['frame_index', 'target_id', 'bbox_cx', 'bbox_cy', 'bbox_width', 'bbox_height', 'score', 'object_category', 'object_subcategory', 'truncation', 'occlusion'];
-const MCMOTFormat = [
-    'box_id',
-    'avs_id',
-    'frame_index',
-    'bbox_cx',
-    'bbox_cy',
-    'bbox_width',
-    'bbox_height',
-    'score',
-    'truncation',
-    'occlusion',
-    'precision_time_stamp',
-    'platform_tail_number',
-    'platform_heading_angle',
-    'platform_pitch_angle',
-    'platform_roll_angle',
-    'platform_designation',
-    'image_source_sensor',
-    'sensor_latitude',
-    'sensor_longitude',
-    'sensor_true_altitude',
-    'sensor_horizontal_field_of_view',
-    'sensor_vertical_field_of_view',
-    'sensor_relative_azimuth_angle',
-    'sensor_relative_elevation_angle',
-    'sensor_relative_roll_angle',
-    'slant_range',
-    'frame_center_latitude',
-    'frame_center_longitude',
-    'frame_center_elevation',
-    'offset_corner_latitude_point_1',
-    'offset_corner_longitude_point_1',
-    'offset_corner_latitude_point_2',
-    'offset_corner_longitude_point_2',
-    'offset_corner_latitude_point_3',
-    'offset_corner_longitude_point_3',
-    'offset_corner_latitude_point_4',
-    'offset_corner_longitude_point_4',
-    'plaftform_speed',
-    'sensor_exposure_time',
-    'platform-cam_rotation_matrix'
-];
+const inputDir = 'C:/Users/PC/Downloads/input';
+const outDir = 'C:/Users/PC/Documents/s92';
 
 // Create a canvas and context
 const canvas = createCanvas(500, 500);
@@ -111,38 +59,85 @@ function createBaseForder(outDir) {
     })
 }
 
-function processLine(line, format) {
+function processDETLine(line) {
     // Split the line by comma ','
     const values = line.split(',').map(value => value.trim());
-    const cx = 1*values[txtFormat.minx] + values[txtFormat.width]/2;
-    const cy = 1*values[txtFormat.miny] + values[txtFormat.height]/2;
+    const cx = (1*values[DETInputFormat.minx] + values[DETInputFormat.minx]*1)/2;
+    const cy = (1*values[DETInputFormat.miny] + 1*values[DETInputFormat.miny])/2;
    
     const newValues = {
-        'frame_index': values[txtFormat.frameNo],
-        'target_id': `${values[txtFormat.name]}_${values[txtFormat.id]}`,
         'bbox_cx': cx,
         'bbox_cy': cy,
-        'bbox_width': values[txtFormat.width],
-        'bbox_height': values[txtFormat.height],
+        'bbox_width': 1*values[DETInputFormat.maxx] - 1*values[DETInputFormat.minx],
+        'bbox_height': 1*values[DETInputFormat.maxy] - 1*values[DETInputFormat.miny],
         'score': 0,
-        'object_category': 1,
+        'object_category': values[DETInputFormat.cat] || 1,
         'object_subcategory': 1,
         'truncation': 0,
         'occlusion': 0
     }
     // Join the values back with comma ','
-    return format.map(item => newValues[item]);
+    return DETOutputFormat.map(item => newValues[item]);
 }
 
-function convertTxtToDet (fileURL, DETFormat) {
+// Function to calculate the time difference between two timestamps
+function timeDifference(t1, t2) {
+    return Math.abs(new Date(t1) - new Date(t2));
+}
+
+function frameIndexToTime(startTime, index) {
+    const timestamp = (index / 50) * 1000
+    const date = new Date(startTime)
+    const timestampFromDateString = date.getTime() + timestamp
+    return timestampFromDateString
+}
+
+let indexOfFrame = 1;
+function convertTxtToDet (fileURL) {
     // Read the file content synchronously
     const fileContent = fs.readFileSync(fileURL, 'utf8');
     const fileName = path.basename(fileURL).split('.');
     // Split the file content by new line character '\n'
     const lines = fileContent.trim().split('\n');
 
+
+    //get Content metadata klv
+    const fileKLVContent = fs.readFileSync(`${inputDir}/metadata_klv.csv`, 'utf8');
+    const linesKLV = fileKLVContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
+
+    //get content metadata ppk
+    const filePPKContent = fs.readFileSync(`${inputDir}/metadata_ppk.csv`, 'utf8');
+    const linesPPK = filePPKContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
+
+    const timeOfFile = frameIndexToTime(linesKLV[1][0], fileName[0]*1);
+    let minDifference = Infinity;
+    for (let i = indexOfFrame; i < linesKLV.length; i++) {
+        let difference = linesKLV[i] && timeDifference(linesKLV[i][0], timeOfFile);
+        if (difference < minDifference) {
+            minDifference = difference;
+            indexOfFrame = i;
+        }
+    }
+    
+    const contentMetadataKLV = metadataOutputFormat.map(item => {
+        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+    });
+
+    const contentMetadataPPK = metadataOutputFormat.map(item => {
+        if(['sensorLatitude','sensorLongitude','sensorTrueAltitude'].includes(item)) {
+            return PPKInputFormat.indexOf(item) >= 0 ? linesPPK[indexOfFrame][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
+        }
+        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+    });
+
+    if (!fs.existsSync(outDir+'/Train/240321_00001/DET_MOT/001/Meta')) {
+        createDirectory('/Train/240321_00001/DET_MOT/001/Meta')
+    }
+    fs.writeFileSync(outDir+'/Train/240321_00001/DET_MOT/001/Meta' +`/240331_00001_001_${fileName[0].slice(-5)}.txt`, contentMetadataKLV.toString());
+    fs.writeFileSync(outDir+'/Train/240321_00001/DET_MOT/001/Meta' +`/240331_00001_001_${fileName[0].slice(-5)}(PPK).txt`, contentMetadataPPK.toString());
+
     // Process each line and join them with '\n' to form the new content
-    const newContent = lines.map(line => processLine(line, DETFormat)).join('\n');
+    const newContent = lines.map(line => processDETLine(line)).join('\n');
     const outputFilePath = `/Train/240321_00001/DET_MOT/001/Annotation Det`;
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
@@ -243,10 +238,10 @@ function contentMCMOT(fileURL, dir) {
         for (let i = 0; i < xxx.length; i++) {
             const values = xxx[i].segment.split(",");
             result += '\t<object>\n';
-            result += '\t\t<target_id_global>car' + values[1] + '</target_id_global>\n';
+            result += '\t\t<target_id_global>car' + valueToText(values[1] ) + '</target_id_global>\n';
             result += '\t\t<object_category>' + '0' + '</object_category>\n';
             result += '\t\t<object_subcategory>' + '0' + '</object_subcategory>\n';
-            result += '\t\t<box_id>box' + values[1] + '</box_id>\n';
+            result += '\t\t<box_id>box' + valueToText(values[1] ) + '</box_id>\n';
             result += '\t</object>\n';
         }
     }
@@ -254,67 +249,78 @@ function contentMCMOT(fileURL, dir) {
     if (dir === 'pos') {
         for (let i = 0; i < xxx.length; i++) {
             const values = xxx[i].segment.split(",");
+            const ppk = xxx[i].ppk.split(",");
             result += '\t<object>\n';
-            result += '\t\t<target_id_global>car' + values[1] + '</target_id_global>\n';
-            result += '\t\t<avs_id>' + values[1] + '</avs_id>\n';
-            result += '\t\t<frame_index>' + values[2] + '</frame_index>\n';
-            result += '\t\t<target_pos_lat>' + values[3] + '</target_pos_lat>\n';
-            result += '\t\t<target_pos_long>' + values[4] + '</target_pos_long>\n';
-            result += '\t\t<target_pos_alt>' + values[5] + '</target_pos_alt>\n';
+            result += '\t\t<target_id_global>car' + valueToText(values[1] ) + '</target_id_global>\n';
+            result += '\t\t<avs_id>' + valueToText(values[1] ) + '</avs_id>\n';
+            result += '\t\t<frame_index>' + valueToText(values[0] ) + '</frame_index>\n';
+            result += '\t\t<target_pos_lat>' + valueToText( ppk[1] ) + '</target_pos_lat>\n';
+            result += '\t\t<target_pos_long>' + valueToText( ppk[2] ) + '</target_pos_long>\n';
+            result += '\t\t<target_pos_alt>' + valueToText( ppk[3] ) + '</target_pos_alt>\n';
             result += '\t</object>\n';
         }
     }
 
     if (dir === 'box') {
         for (let i = 0; i < xxx.length; i++) {
+            const segment = xxx[i].segment.split(",");
             const values = xxx[i].klv.split(",");
             result += '\t<object>\n';
-            result += '\t\t<box_id>box' + values[1] + '</box_id>\n';
-            result += '\t\t<avs_id>' + values[1] + '</avs_id>\n';
-            result += '\t\t<frame_index>' + values[2] + '</frame_index>\n';
-            result += '\t\t<bbox_cx>' + values[3] + '</bbox_cx>\n';
-            result += '\t\t<bbox_cy>' + values[4] + '</bbox_cy>\n';
-            result += '\t\t<bbox_width>' + values[6] + '</bbox_width>\n';
-            result += '\t\t<bbox_height>' + values[7] + '</bbox_height>\n';
-            result += '\t\t<score>' + values[8] + '</score>\n';
-            result += '\t\t<truncation>' + values[9] + '</truncation>\n';
-            result += '\t\t<occlusion>' + values[10] + '</occlusion>\n';
-            result += '\t\t<precision_time_stamp>' + values[11] + '</precision_time_stamp>\n';
-            result += '\t\t<platform_tail_number>' + values[12] + '</platform_tail_number>\n';
-            result += '\t\t<platform_heading_angle>' + values[13] + '</platform_heading_angle>\n';
-            result += '\t\t<platform_pitch_angle>' + values[14] + '</platform_pitch_angle>\n';
-            result += '\t\t<platform_roll_angle>' + values[15] + '</platform_roll_angle>\n';
-            result += '\t\t<platform_designation>' + values[16] + '</platform_designation>\n';
-            result += '\t\t<image_source_sensor>' + values[17] + '</image_source_sensor>\n';
-            result += '\t\t<sensor_latitude>' + values[18] + '</sensor_latitude>\n';
-            result += '\t\t<sensor_longitude>' + values[19] + '</sensor_longitude>\n';
-            result += '\t\t<sensor_true_altitude>' + values[20] + '</sensor_true_altitude>\n';
-            result += '\t\t<sensor_horizontal_field_of_view>' + values[21] + '</sensor_horizontal_field_of_view>\n';
-            result += '\t\t<sensor_vertical_field_of_view>' + values[22] + '</sensor_vertical_field_of_view>\n';
-            result += '\t\t<sensor_relative_azimuth_angle>' + values[23] + '</sensor_relative_azimuth_angle>\n';
-            result += '\t\t<sensor_relative_elevation_angle>' + values[24] + '</sensor_relative_elevation_angle>\n';
-            result += '\t\t<sensor_relative_roll_angle>' + values[25] + '</sensor_relative_roll_angle>\n';
-            result += '\t\t<slant_range>' + values[26] + '</slant_range>\n';
-            result += '\t\t<frame_center_latitude>' + values[27] + '</frame_center_latitude>\n';
-            result += '\t\t<frame_center_longitude>' + values[28] + '</frame_center_longitude>\n';
-            result += '\t\t<frame_center_elevation>' + values[29] + '</frame_center_elevation>\n';
-            result += '\t\t<offset_corner_latitude_point_1>' + values[30] + '</offset_corner_latitude_point_1>\n';
-            result += '\t\t<offset_corner_longitude_point_1>' + values[31] + '</offset_corner_longitude_point_1>\n';
-            result += '\t\t<offset_corner_latitude_point_2>' + values[32] + '</offset_corner_latitude_point_2>\n';
-            result += '\t\t<offset_corner_longitude_point_2>' + values[33] + '</offset_corner_longitude_point_2>\n';
-            result += '\t\t<offset_corner_latitude_point_3>' + values[34] + '</offset_corner_latitude_point_3>\n';
-            result += '\t\t<offset_corner_longitude_point_3>' + values[35] + '</offset_corner_longitude_point_3>\n';
-            result += '\t\t<offset_corner_latitude_point_4>' + values[36] + '</offset_corner_latitude_point_4>\n';
-            result += '\t\t<offset_corner_longitude_point_4>' + values[37] + '</offset_corner_longitude_point_4>\n';
-            result += '\t\t<plaftform_speed>' + values[38] + '</plaftform_speed>\n';
-            result += '\t\t<sensor_exposure_time>' + values[39] + '</sensor_exposure_time>\n';
-            result += '\t\t<platform-cam_rotation_matrix>' + values[40] + '</platform-cam_rotation_matrix>\n';
+            result += '\t\t<box_id>box' + valueToText( segment[1] ) + '</box_id>\n';
+            result += '\t\t<avs_id>' + valueToText( segment[1] ) + '</avs_id>\n';
+            result += '\t\t<frame_index>' + valueToText( segment[0] ) + '</frame_index>\n';
+            result += '\t\t<bbox_cx>' + valueToText( segment[2] ) + '</bbox_cx>\n';
+            result += '\t\t<bbox_cy>' + valueToText( segment[3] ) + '</bbox_cy>\n';
+            result += '\t\t<bbox_width>' + valueToText( segment[4] ) + '</bbox_width>\n';
+            result += '\t\t<bbox_height>' + valueToText( segment[5] ) + '</bbox_height>\n';
+            result += '\t\t<score>' + valueToText( segment[6] ) + '</score>\n';
+            result += '\t\t<truncation>' + valueToText( segment[7] ) + '</truncation>\n';
+            result += '\t\t<occlusion>' + valueToText( segment[8] ) + '</occlusion>\n';
+            result += '\t\t<precision_time_stamp>' + valueToText(values[0] ) + '</precision_time_stamp>\n';
+            result += '\t\t<platform_tail_number>' + valueToText(values[1] ) + '</platform_tail_number>\n';
+            result += '\t\t<platform_heading_angle>' + valueToText(values[2] ) + '</platform_heading_angle>\n';
+            result += '\t\t<platform_pitch_angle>' + valueToText(values[3] ) + '</platform_pitch_angle>\n';
+            result += '\t\t<platform_roll_angle>' + valueToText(values[4] ) + '</platform_roll_angle>\n';
+            result += '\t\t<platform_designation>' + valueToText(values[5] ) + '</platform_designation>\n';
+            result += '\t\t<image_source_sensor>' + valueToText(values[6] ) + '</image_source_sensor>\n';
+            result += '\t\t<sensor_latitude>' + valueToText(values[7] ) + '</sensor_latitude>\n';
+            result += '\t\t<sensor_longitude>' + valueToText(values[8] ) + '</sensor_longitude>\n';
+            result += '\t\t<sensor_true_altitude>' + valueToText(values[9] ) + '</sensor_true_altitude>\n';
+            result += '\t\t<sensor_horizontal_field_of_view>' + valueToText(values[11] ) + '</sensor_horizontal_field_of_view>\n';
+            result += '\t\t<sensor_vertical_field_of_view>' + valueToText(values[12] ) + '</sensor_vertical_field_of_view>\n';
+            result += '\t\t<sensor_relative_azimuth_angle>' + valueToText(values[13] ) + '</sensor_relative_azimuth_angle>\n';
+            result += '\t\t<sensor_relative_elevation_angle>' + valueToText(values[14] ) + '</sensor_relative_elevation_angle>\n';
+            result += '\t\t<sensor_relative_roll_angle>' + valueToText(values[15] ) + '</sensor_relative_roll_angle>\n';
+            result += '\t\t<slant_range>' + valueToText(values[16] ) + '</slant_range>\n';
+            result += '\t\t<frame_center_latitude>' + valueToText(values[17] ) + '</frame_center_latitude>\n';
+            result += '\t\t<frame_center_longitude>' + valueToText(values[18] ) + '</frame_center_longitude>\n';
+            result += '\t\t<frame_center_elevation>' + valueToText(values[19] ) + '</frame_center_elevation>\n';
+            result += '\t\t<offset_corner_latitude_point_1>' + valueToText(values[20] ) + '</offset_corner_latitude_point_1>\n';
+            result += '\t\t<offset_corner_longitude_point_1>' + valueToText(values[21] ) + '</offset_corner_longitude_point_1>\n';
+            result += '\t\t<offset_corner_latitude_point_2>' + valueToText(values[22] ) + '</offset_corner_latitude_point_2>\n';
+            result += '\t\t<offset_corner_longitude_point_2>' + valueToText(values[23] ) + '</offset_corner_longitude_point_2>\n';
+            result += '\t\t<offset_corner_latitude_point_3>' + valueToText(values[24] ) + '</offset_corner_latitude_point_3>\n';
+            result += '\t\t<offset_corner_longitude_point_3>' + valueToText(values[25] ) + '</offset_corner_longitude_point_3>\n';
+            result += '\t\t<offset_corner_latitude_point_4>' + valueToText(values[26] ) + '</offset_corner_latitude_point_4>\n';
+            result += '\t\t<offset_corner_longitude_point_4>' + valueToText(values[27] ) + '</offset_corner_longitude_point_4>\n';
+            result += '\t\t<plaftform_speed>' + valueToText(values[28] ) + '</plaftform_speed>\n';
+            result += '\t\t<sensor_exposure_time>' + valueToText(values[29] ) + '</sensor_exposure_time>\n';
+            result += '\t\t<platform-cam_rotation_matrix>' + valueToText(values[30] ) + '</platform-cam_rotation_matrix>\n';
             result += '\t</object>\n';
         }
     }
 
     result += '</root>';
     return result;
+}
+
+
+function valueToText(val) {
+    if (!val) {
+        return 'Null'
+    }
+
+    return val.trim()
 }
 
 function convertTxtToMCMOT() {
@@ -327,28 +333,7 @@ function convertTxtToMCMOT() {
     exportXmlToFile(posContent, 'output/MCMOT/Pos/240320_00001.xml')
 }
 
-// Example usage
-function convertTxtToMCMOTxxx() {
-    const fileURL = 'input/klv.csv'
-    // Read the file content synchronously
-    const fileContent = fs.readFileSync(fileURL, 'utf8');
-    const fileName = path.basename(fileURL).split('.');
-    // Split the file content by new line character '\n'
-    const lines = fileContent.trim().split('\n');
-
-    console.log(fileContent)
-
-    // Process each line and join them with '\n' to form the new content
-    const newContent = lines.map(line => {
-        return processLine2(line, MCMOTFormat).join('\n')
-    });
-    const outputFilePath = `Meta`;
-    if (!fs.existsSync(outputFilePath)) {
-        createDirectory(outputFilePath)
-    }
-    fs.writeFileSync(outputFilePath +`/240320_00001_001_${fileName[0].slice(-4)}.txt`, newContent);
-}
-
+///
 function processLine2(line, format) {
     // Split the line by comma ','
     const values = line.split(',').map(value => value.trim());
@@ -369,7 +354,23 @@ function processLine2(line, format) {
         'occlusion': 0
     }
     // Join the values back with comma ','
-    return format.map(item => newValues[item]);
+    return MOTOutputFormat.map(item => newValues[item]);
+}
+
+function convertTxtToMOT (fileURL) {
+    // Read the file content synchronously
+    const fileContent = fs.readFileSync(fileURL, 'utf8');
+    const fileName = path.basename(fileURL).split('.');
+    // Split the file content by new line character '\n'
+    const lines = fileContent.trim().split('\n');
+    
+    // Process each line and join them with '\n' to form the new content
+    const newContent = lines.map(line => processMOTLine(line)).join('\n');
+    const outputFilePath = `/Train/240321_00001/DET_MOT/001/Annotation MOT`;
+    if (!fs.existsSync(outDir+outputFilePath)) {
+        createDirectory(outputFilePath)
+    }
+    fs.writeFileSync(outDir+outputFilePath +`/240331_00001_001.txt`, newContent);
 }
 
 // Draw text 
@@ -487,32 +488,36 @@ function convertToVideo(outputFramesDir, outputVideo, fps) {
 }
 2
 // Main function
-async function convertXXX() {
+async function main() {
     try {
         await createBaseForder(outDir);
-        const directoryPath = inputDir + '/Det';
-        const directoryPathMerged = inputDir + '/TXT_merged';
+        const directoryPathDET = inputDir + '/DET_MOT/TXT';
+        const directoryPathMOT = inputDir + '/DET_MOT/MOT';
         // Read all files in the directory
-        // const files = fs.readdirSync(directoryPath);
+        const filesDET = fs.readdirSync(directoryPathDET);
+        const fileMOT = fs.readdirSync(directoryPathMOT);
 
-        // // Filter out only .txt files
-        // const txtFiles = files.filter(file => path.extname(file).toLowerCase() === '.txt');
+        // Filter out only .txt files
+        const detFiles = filesDET.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
+        console.log('detFiles', detFiles)
+        // Process each .txt file
+        detFiles.forEach(file => {
+            const filePath = path.join(directoryPathDET, file);
+            convertTxtToDet(filePath, DETOutputFormat);
+        });
 
-        // // Process each .txt file
-        // txtFiles.forEach(file => {
-        //     const filePath = path.join(directoryPath, file);
-        //     convertTxtToDet(filePath);
-        // });
-        
-        
-        // convert Txt To MCMOT
-        convertTxtToMCMOT('input/segment.csv');
+        const motFiles = fileMOT.filter(file => path.extname(file).toLowerCase() === '.txt');
+        // Process each .txt file
+        motFiles.forEach(file => {
+            const filePath = path.join(directoryPathMOT, file);
+            convertTxtToMOT(filePath, DETOutputFormat);
+        });
 
 
         // await convertToFrames(inputVideo, outputFramesDir, fps);
         // await convertXML2JSON('label.xml');
         // await convertToVideo('frames2', outputVideo, fps)
-        // console.log('Conversion complete.');
+        console.log('Conversion complete.');
     } catch (error) {
         console.error('Error during conversion:', error);
     }
