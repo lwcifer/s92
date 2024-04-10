@@ -1,10 +1,20 @@
 {
+  "name": "s92",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "dev": "nodemon ./bin/www"
+  },
   "dependencies": {
+    "amqplib": "^0.10.3",
     "canvas": "^2.11.2",
+    "express": "^4.19.2",
     "ffmpeg.js": "^4.2.9003",
     "gm": "^1.25.0",
-    "konva": "^9.3.6",
+    "redis": "^4.6.13",
     "sharp": "^0.33.2",
+    "websocket": "^1.0.34",
     "xml-js": "^1.6.11",
     "xml2js": "^0.6.2"
   }

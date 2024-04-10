@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Image</title>
+</head>
+
+<body>
+    <h1>Download Image</h1>
+    <label for="folderPath">Folder Path:</label>
+    <button id="selectFolderButton">Select Folder</button>
+    <input type="text" id="folderPath" placeholder="Enter folder path...">
+    <button id="downloadButton">Download Data</button>
+
+    <script>
+        async function selectFolder() {
+            try {
+                const handle = await window.showDirectoryPicker();
+                const folderPath = handle; // Get the name of the selected folder
+
+                console.log('Selected folder path:', folderPath);
+
+                // Enable the download button now that a folder has been selected
+                document.getElementById('downloadButton').disabled = false;
+                // Store the selected folder path in a data attribute of the download button
+                document.getElementById('downloadButton').setAttribute('data-folder-path', folderPath);
+            } catch (error) {
+                console.error('Error selecting folder:', error);
+            }
+        }
+
+        async function downloadImage() {
+            try {
+                const folderPath = document.getElementById('downloadButton').getAttribute('data-folder-path');
+
+                if (!folderPath) {
+                    throw new Error('No folder selected');
+                }
+
+                console.log('Downloading data from folder:', folderPath);
+
+                // Example: Sending folder path to the server
+                const response = await fetch('/api/data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ folderPath })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+
+                const data = await response.json();
+                console.log('Server response:', data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        document.getElementById('selectFolderButton').addEventListener('click', selectFolder);
+        document.getElementById('downloadButton').addEventListener('click', downloadImage);
+    </script>
+</body>
+
+</html>
