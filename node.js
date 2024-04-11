@@ -501,35 +501,37 @@ async function convert(params) {
         filesClips.length > 0 && filesClips.forEach(clip => {
             const clipDir = `/Train/${clip}`;
             createDirectory(clipDir);
+            if(!mod || mod === '1') {
+                const directoryPathDET = `${inputDir}/${clip}/DET_MOT/`;
 
-            const directoryPathDET = `${inputDir}/${clip}/DET_MOT/`;
+                // Read all files in the directory
+                const filesDETDrones = fs.readdirSync(directoryPathDET);
 
-            // Read all files in the directory
-            const filesDETDrones = fs.readdirSync(directoryPathDET);
+                if(filesDETDrones.length > 0) {
+                    filesDETDrones.forEach(drone => {
+                        indexOfFrame = 1;
+                        const droneDir = directoryPathDET + drone;
+                        const detFolderFiles = fs.readdirSync(path.join(droneDir, 'TXT'))
+                        // Filter out only .txt files
+                        const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
+                        // Process each .txt file
+                        detFiles.forEach(file => {
+                            convertTxtToDet(clip, drone, file);
+                        });
 
-            if(filesDETDrones.length > 0) {
-                filesDETDrones.forEach(drone => {
-                    indexOfFrame = 1;
-                    const droneDir = directoryPathDET + drone;
-                    const detFolderFiles = fs.readdirSync(path.join(droneDir, 'TXT'))
-                    // Filter out only .txt files
-                    const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
-                    // Process each .txt file
-                    detFiles.forEach(file => {
-                        convertTxtToDet(clip, drone, file);
+                        const motFolderFiles = fs.readdirSync(path.join(directoryPathDET + drone, 'MOT'))
+                        const motFiles = motFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt');
+                        // Process each .txt file
+                        motFiles.forEach(file => {
+                            convertTxtToMOT(clip, drone, file);
+                        });
                     });
-
-                    const motFolderFiles = fs.readdirSync(path.join(directoryPathDET + drone, 'MOT'))
-                    const motFiles = motFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt');
-                    // Process each .txt file
-                    motFiles.forEach(file => {
-                        convertTxtToMOT(clip, drone, file);
-                    });
-                });
-            };
-            convertTxtToMCMOT(clip);
+                };
+            }
+            if(!mod || mod === '2') {
+                convertTxtToMCMOT(clip);
+            }
         });
-
 
         // await convertToFrames(inputVideo, outputFramesDir, fps);
         // await convertXML2JSON('label.xml');
