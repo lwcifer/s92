@@ -172,18 +172,18 @@ function frameIndexToTime(startTime, index) {
     return timestampFromDateString
 }
 
-function contentMCMOT(fileURL, dir) {
+function contentMCMOT(dir) {
     // Read the file content synchronously
-    const fileContent = fs.readFileSync(fileURL, 'utf8');
-    let segmentContent = fs.readFileSync('input/segment.csv', 'utf8');
-    let ppkContent = fs.readFileSync('input/ppk.csv', 'utf8');
+    const fileContent = fs.readFileSync('input/klv.csv', 'utf8');
+    const segmentContent = fs.readFileSync('input/segment.csv', 'utf8');
+    const ppkContent = fs.readFileSync('input/ppk.csv', 'utf8');
     // Split the file content by new line character '\n'
-    let lines = fileContent.trim().split('\n');
-    let ppk = ppkContent.trim().split('\n');
-    lines.shift();
+    const lines = fileContent.trim().split('\n');
+    const ppk = ppkContent.trim().split('\n');
     const segments = segmentContent.trim().split('\n');
+    lines.shift();
     const rootTime = lines[0].split(",")[0]
-    let startTime = frameIndexToTime(rootTime, segments[0].split(',')[0])
+    const startTime = frameIndexToTime(rootTime, segments[0].split(',')[0])
     // console.log('startTime', new Date(startTime))
 
     lines.sort((a,b)=> {
@@ -206,23 +206,17 @@ function contentMCMOT(fileURL, dir) {
     let xxx = [{segment: segments[0], klv: lines[0], ppk: ppk[0]}]
     let frameIndex = segments[count].split(',')[0]
     let crrTime = frameIndexToTime(rootTime, frameIndex)
-    console.log('lines', lines)
-    console.log('startTime', new Date(startTime))
-    console.log('crrTime', new Date(crrTime))
-    console.log('item', new Date(lines[1].split(',')[0]))
     while (count < segments.length && index < lines.length) {
         const item = lines[index]
         const itemTime = (new Date(item.split(',')[0])).getTime();
-        // console.log('count', itemTime, crrTime, itemTime - crrTime )
 
         if (itemTime - crrTime > 0) {
             const prev = lines[index - 1]
             const prevTime = new Date(prev.split(',')[0]).getTime();
             if (frameIndex === segments[count].split(',')[0]) {
                 xxx.push({segment: segments[count], klv: prev, ppk: ppk[index - 1]})
-            } else if (count < segments.length) {
-                klv = crrTime - prevTime < itemTime - crrTime ? item : prev
-                klv = crrTime - prevTime < itemTime - crrTime ?  ppk[index] :  ppk[index - 1]
+            } else {
+                const klv = crrTime - prevTime < itemTime - crrTime ?  ppk[index] : ppk[index - 1]
                 xxx.push({segment: segments[count], klv, ppk: ppk[index - 1]})
                 frameIndex = segments[count].split(',')[0]
                 crrTime = frameIndexToTime(rootTime, frameIndex)
@@ -238,10 +232,10 @@ function contentMCMOT(fileURL, dir) {
         for (let i = 0; i < xxx.length; i++) {
             const values = xxx[i].segment.split(",");
             result += '\t<object>\n';
-            result += '\t\t<target_id_global>car' + valueToText(values[1] ) + '</target_id_global>\n';
+            result += '\t\t<target_id_global>car' + valueToText(values[1]) + '</target_id_global>\n';
             result += '\t\t<object_category>' + '0' + '</object_category>\n';
             result += '\t\t<object_subcategory>' + '0' + '</object_subcategory>\n';
-            result += '\t\t<box_id>box' + valueToText(values[1] ) + '</box_id>\n';
+            result += '\t\t<box_id>box' + valueToText(values[1]) + '</box_id>\n';
             result += '\t</object>\n';
         }
     }
@@ -251,12 +245,12 @@ function contentMCMOT(fileURL, dir) {
             const values = xxx[i].segment.split(",");
             const ppk = xxx[i].ppk.split(",");
             result += '\t<object>\n';
-            result += '\t\t<target_id_global>car' + valueToText(values[1] ) + '</target_id_global>\n';
-            result += '\t\t<avs_id>' + valueToText(values[1] ) + '</avs_id>\n';
-            result += '\t\t<frame_index>' + valueToText(values[0] ) + '</frame_index>\n';
-            result += '\t\t<target_pos_lat>' + valueToText( ppk[1] ) + '</target_pos_lat>\n';
-            result += '\t\t<target_pos_long>' + valueToText( ppk[2] ) + '</target_pos_long>\n';
-            result += '\t\t<target_pos_alt>' + valueToText( ppk[3] ) + '</target_pos_alt>\n';
+            result += '\t\t<target_id_global>car' + valueToText(values[1]) + '</target_id_global>\n';
+            result += '\t\t<avs_id>' + valueToText(values[1]) + '</avs_id>\n';
+            result += '\t\t<frame_index>' + valueToText(values[0]) + '</frame_index>\n';
+            result += '\t\t<target_pos_lat>' + valueToText(ppk[1]) + '</target_pos_lat>\n';
+            result += '\t\t<target_pos_long>' + valueToText(ppk[2]) + '</target_pos_long>\n';
+            result += '\t\t<target_pos_alt>' + valueToText(ppk[3]) + '</target_pos_alt>\n';
             result += '\t</object>\n';
         }
     }
@@ -266,46 +260,46 @@ function contentMCMOT(fileURL, dir) {
             const segment = xxx[i].segment.split(",");
             const values = xxx[i].klv.split(",");
             result += '\t<object>\n';
-            result += '\t\t<box_id>box' + valueToText( segment[1] ) + '</box_id>\n';
-            result += '\t\t<avs_id>' + valueToText( segment[1] ) + '</avs_id>\n';
-            result += '\t\t<frame_index>' + valueToText( segment[0] ) + '</frame_index>\n';
-            result += '\t\t<bbox_cx>' + valueToText( segment[2] ) + '</bbox_cx>\n';
-            result += '\t\t<bbox_cy>' + valueToText( segment[3] ) + '</bbox_cy>\n';
-            result += '\t\t<bbox_width>' + valueToText( segment[4] ) + '</bbox_width>\n';
-            result += '\t\t<bbox_height>' + valueToText( segment[5] ) + '</bbox_height>\n';
-            result += '\t\t<score>' + valueToText( segment[6] ) + '</score>\n';
-            result += '\t\t<truncation>' + valueToText( segment[7] ) + '</truncation>\n';
-            result += '\t\t<occlusion>' + valueToText( segment[8] ) + '</occlusion>\n';
-            result += '\t\t<precision_time_stamp>' + valueToText(values[0] ) + '</precision_time_stamp>\n';
-            result += '\t\t<platform_tail_number>' + valueToText(values[1] ) + '</platform_tail_number>\n';
-            result += '\t\t<platform_heading_angle>' + valueToText(values[2] ) + '</platform_heading_angle>\n';
-            result += '\t\t<platform_pitch_angle>' + valueToText(values[3] ) + '</platform_pitch_angle>\n';
-            result += '\t\t<platform_roll_angle>' + valueToText(values[4] ) + '</platform_roll_angle>\n';
-            result += '\t\t<platform_designation>' + valueToText(values[5] ) + '</platform_designation>\n';
-            result += '\t\t<image_source_sensor>' + valueToText(values[6] ) + '</image_source_sensor>\n';
-            result += '\t\t<sensor_latitude>' + valueToText(values[7] ) + '</sensor_latitude>\n';
-            result += '\t\t<sensor_longitude>' + valueToText(values[8] ) + '</sensor_longitude>\n';
-            result += '\t\t<sensor_true_altitude>' + valueToText(values[9] ) + '</sensor_true_altitude>\n';
-            result += '\t\t<sensor_horizontal_field_of_view>' + valueToText(values[11] ) + '</sensor_horizontal_field_of_view>\n';
-            result += '\t\t<sensor_vertical_field_of_view>' + valueToText(values[12] ) + '</sensor_vertical_field_of_view>\n';
-            result += '\t\t<sensor_relative_azimuth_angle>' + valueToText(values[13] ) + '</sensor_relative_azimuth_angle>\n';
-            result += '\t\t<sensor_relative_elevation_angle>' + valueToText(values[14] ) + '</sensor_relative_elevation_angle>\n';
-            result += '\t\t<sensor_relative_roll_angle>' + valueToText(values[15] ) + '</sensor_relative_roll_angle>\n';
-            result += '\t\t<slant_range>' + valueToText(values[16] ) + '</slant_range>\n';
-            result += '\t\t<frame_center_latitude>' + valueToText(values[17] ) + '</frame_center_latitude>\n';
-            result += '\t\t<frame_center_longitude>' + valueToText(values[18] ) + '</frame_center_longitude>\n';
-            result += '\t\t<frame_center_elevation>' + valueToText(values[19] ) + '</frame_center_elevation>\n';
-            result += '\t\t<offset_corner_latitude_point_1>' + valueToText(values[20] ) + '</offset_corner_latitude_point_1>\n';
-            result += '\t\t<offset_corner_longitude_point_1>' + valueToText(values[21] ) + '</offset_corner_longitude_point_1>\n';
-            result += '\t\t<offset_corner_latitude_point_2>' + valueToText(values[22] ) + '</offset_corner_latitude_point_2>\n';
-            result += '\t\t<offset_corner_longitude_point_2>' + valueToText(values[23] ) + '</offset_corner_longitude_point_2>\n';
-            result += '\t\t<offset_corner_latitude_point_3>' + valueToText(values[24] ) + '</offset_corner_latitude_point_3>\n';
-            result += '\t\t<offset_corner_longitude_point_3>' + valueToText(values[25] ) + '</offset_corner_longitude_point_3>\n';
-            result += '\t\t<offset_corner_latitude_point_4>' + valueToText(values[26] ) + '</offset_corner_latitude_point_4>\n';
-            result += '\t\t<offset_corner_longitude_point_4>' + valueToText(values[27] ) + '</offset_corner_longitude_point_4>\n';
-            result += '\t\t<plaftform_speed>' + valueToText(values[28] ) + '</plaftform_speed>\n';
-            result += '\t\t<sensor_exposure_time>' + valueToText(values[29] ) + '</sensor_exposure_time>\n';
-            result += '\t\t<platform-cam_rotation_matrix>' + valueToText(values[30] ) + '</platform-cam_rotation_matrix>\n';
+            result += '\t\t<box_id>box' + valueToText(segment[1]) + '</box_id>\n';
+            result += '\t\t<avs_id>' + valueToText(segment[1]) + '</avs_id>\n';
+            result += '\t\t<frame_index>' + valueToText(segment[0]) + '</frame_index>\n';
+            result += '\t\t<bbox_cx>' + valueToText(segment[2]) + '</bbox_cx>\n';
+            result += '\t\t<bbox_cy>' + valueToText(segment[3]) + '</bbox_cy>\n';
+            result += '\t\t<bbox_width>' + valueToText(segment[4]) + '</bbox_width>\n';
+            result += '\t\t<bbox_height>' + valueToText(segment[5]) + '</bbox_height>\n';
+            result += '\t\t<score>' + valueToText(segment[6]) + '</score>\n';
+            result += '\t\t<truncation>' + valueToText(segment[7]) + '</truncation>\n';
+            result += '\t\t<occlusion>' + valueToText(segment[8]) + '</occlusion>\n';
+            result += '\t\t<precision_time_stamp>' + valueToText(values[0]) + '</precision_time_stamp>\n';
+            result += '\t\t<platform_tail_number>' + valueToText(values[1]) + '</platform_tail_number>\n';
+            result += '\t\t<platform_heading_angle>' + valueToText(values[2]) + '</platform_heading_angle>\n';
+            result += '\t\t<platform_pitch_angle>' + valueToText(values[3]) + '</platform_pitch_angle>\n';
+            result += '\t\t<platform_roll_angle>' + valueToText(values[4]) + '</platform_roll_angle>\n';
+            result += '\t\t<platform_designation>' + valueToText(values[5]) + '</platform_designation>\n';
+            result += '\t\t<image_source_sensor>' + valueToText(values[6]) + '</image_source_sensor>\n';
+            result += '\t\t<sensor_latitude>' + valueToText(values[7]) + '</sensor_latitude>\n';
+            result += '\t\t<sensor_longitude>' + valueToText(values[8]) + '</sensor_longitude>\n';
+            result += '\t\t<sensor_true_altitude>' + valueToText(values[9]) + '</sensor_true_altitude>\n';
+            result += '\t\t<sensor_horizontal_field_of_view>' + valueToText(values[11]) + '</sensor_horizontal_field_of_view>\n';
+            result += '\t\t<sensor_vertical_field_of_view>' + valueToText(values[12]) + '</sensor_vertical_field_of_view>\n';
+            result += '\t\t<sensor_relative_azimuth_angle>' + valueToText(values[13]) + '</sensor_relative_azimuth_angle>\n';
+            result += '\t\t<sensor_relative_elevation_angle>' + valueToText(values[14]) + '</sensor_relative_elevation_angle>\n';
+            result += '\t\t<sensor_relative_roll_angle>' + valueToText(values[15]) + '</sensor_relative_roll_angle>\n';
+            result += '\t\t<slant_range>' + valueToText(values[16]) + '</slant_range>\n';
+            result += '\t\t<frame_center_latitude>' + valueToText(values[17]) + '</frame_center_latitude>\n';
+            result += '\t\t<frame_center_longitude>' + valueToText(values[18]) + '</frame_center_longitude>\n';
+            result += '\t\t<frame_center_elevation>' + valueToText(values[19]) + '</frame_center_elevation>\n';
+            result += '\t\t<offset_corner_latitude_point_1>' + valueToText(values[20]) + '</offset_corner_latitude_point_1>\n';
+            result += '\t\t<offset_corner_longitude_point_1>' + valueToText(values[21]) + '</offset_corner_longitude_point_1>\n';
+            result += '\t\t<offset_corner_latitude_point_2>' + valueToText(values[22]) + '</offset_corner_latitude_point_2>\n';
+            result += '\t\t<offset_corner_longitude_point_2>' + valueToText(values[23]) + '</offset_corner_longitude_point_2>\n';
+            result += '\t\t<offset_corner_latitude_point_3>' + valueToText(values[24]) + '</offset_corner_latitude_point_3>\n';
+            result += '\t\t<offset_corner_longitude_point_3>' + valueToText(values[25]) + '</offset_corner_longitude_point_3>\n';
+            result += '\t\t<offset_corner_latitude_point_4>' + valueToText(values[26]) + '</offset_corner_latitude_point_4>\n';
+            result += '\t\t<offset_corner_longitude_point_4>' + valueToText(values[27]) + '</offset_corner_longitude_point_4>\n';
+            result += '\t\t<plaftform_speed>' + valueToText(values[28]) + '</plaftform_speed>\n';
+            result += '\t\t<sensor_exposure_time>' + valueToText(values[29]) + '</sensor_exposure_time>\n';
+            result += '\t\t<platform-cam_rotation_matrix>' + valueToText(values[30]) + '</platform-cam_rotation_matrix>\n';
             result += '\t</object>\n';
         }
     }
@@ -324,10 +318,9 @@ function valueToText(val) {
 }
 
 function convertTxtToMCMOT() {
-    const fileURL = 'input/klv.csv'
-    const boxContent = contentMCMOT(fileURL, 'box')
-    const mainContent = contentMCMOT(fileURL, 'main')
-    const posContent = contentMCMOT(fileURL, 'pos')
+    const boxContent = contentMCMOT('box')
+    const mainContent = contentMCMOT('main')
+    const posContent = contentMCMOT('pos')
     exportXmlToFile(boxContent, 'output/MCMOT/Box/240320_00001.xml')
     exportXmlToFile(mainContent, 'output/MCMOT/Main/240320_00001.xml')
     exportXmlToFile(posContent, 'output/MCMOT/Pos/240320_00001.xml')
@@ -523,7 +516,8 @@ async function main() {
     }
 }
 
-async function convert() {
+async function convert(req) {
+    console.log('req: ', req)
     convertTxtToMCMOT('input/segment.csv');
 }
 // Run the main function

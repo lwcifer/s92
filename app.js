@@ -1,6 +1,8 @@
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
 const PORT = process.env.PORT || 3000;
+app.use(bodyParser.json());
 
 const { convert } = require('./node');
 
@@ -11,7 +13,8 @@ app.use(express.static('public'));
 app.post('/api/data', async (req, res) => {
   try {
     // Call the convert function and wait for it to complete
-    await convert();
+    // const { input, output, fps, mode } = req.body;
+    await convert(req.body);
 
     // Once the convert function completes, send the response
     res.json({ status: 200 });

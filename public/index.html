@@ -4,42 +4,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Download Image</title>
+    <title>S92</title>
+    <link rel="icon" href="favicon.svg" type='image/svg+xml'>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <h1>Download Image</h1>
-    <label for="folderPath">Folder Path:</label>
-    <button id="selectFolderButton">Select Folder</button>
-    <input type="text" id="folderPath" placeholder="Enter folder path...">
-    <button id="downloadButton">Download Data</button>
+    <h1>Dabeeo <span>S92</span></h1>
+    <div class="form">
+        <div class="item">
+            <label for="inputFolderPath">Input folder</label>
+            <input type="text" id="inputFolderPath" name="inputpath" placeholder="Enter input folder path...">
+        </div>
+            <div class="item">
+            <label for="outputFolderPath">Output folder</label>
+            <input type="text" id="outputFolderPath" name="outputpath" placeholder="Enter output folder path...">
+        </div>
+        <div class="item">
+            <label for="fps">FPS</label>
+            <input type="number" id="fps" value="10" name="fps" placeholder="Enter video output FPS...">
+        </div>
+        <div class="item">
+            <label for="fps">Mode</label>
+            <select id="mode" name="mode">
+                <option value="">All</option>
+                <option value="1">DET & MOT</option>
+                <option value="2">MCMOT</option>
+            </select>
+        </div>
+        <button id="convertButton">Convert</button>
+    </div>
 
     <script>
-        async function selectFolder() {
+        async function convertButton() {
             try {
-                const handle = await window.showDirectoryPicker();
-                const folderPath = handle; // Get the name of the selected folder
+                const input = document.getElementById('inputFolderPath').value.trim();
+                const output = document.getElementById('outputFolderPath').value.trim();
+                const fps = document.getElementById('fps').value.trim();
+                const mode = document.getElementById('mode').value.trim();
 
-                console.log('Selected folder path:', folderPath);
-
-                // Enable the download button now that a folder has been selected
-                document.getElementById('downloadButton').disabled = false;
-                // Store the selected folder path in a data attribute of the download button
-                document.getElementById('downloadButton').setAttribute('data-folder-path', folderPath);
-            } catch (error) {
-                console.error('Error selecting folder:', error);
-            }
-        }
-
-        async function downloadImage() {
-            try {
-                const folderPath = document.getElementById('downloadButton').getAttribute('data-folder-path');
-
-                if (!folderPath) {
+                if (!1) {
                     throw new Error('No folder selected');
                 }
 
-                console.log('Downloading data from folder:', folderPath);
 
                 // Example: Sending folder path to the server
                 const response = await fetch('/api/data', {
@@ -47,7 +54,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ folderPath })
+                    body: JSON.stringify({ input, output, fps, mode })
                 });
 
                 if (!response.ok) {
@@ -61,8 +68,7 @@
             }
         }
 
-        document.getElementById('selectFolderButton').addEventListener('click', selectFolder);
-        document.getElementById('downloadButton').addEventListener('click', downloadImage);
+        document.getElementById('convertButton').addEventListener('click', convertButton);
     </script>
 </body>
 
