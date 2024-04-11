@@ -13,7 +13,6 @@ app.use(express.static('public'));
 app.post('/api/data', async (req, res) => {
   try {
     // Call the convert function and wait for it to complete
-    // const { input, output, fps, mode } = req.body;
     await convert(req.body);
 
     // Once the convert function completes, send the response
