@@ -218,7 +218,6 @@ function contentMCMOT(clip) {
     const mcmotDronesDir = `${inputDir}/${clip}/MCMOT`;
     const filesMCMOTDrones = fs.readdirSync(mcmotDronesDir);
     let xxx = []
-    console.log('filesMCMOTDrones', filesMCMOTDrones)
     if(filesMCMOTDrones.length > 0) {
         filesMCMOTDrones.forEach(drone => {
             // Read the file content synchronously
@@ -235,6 +234,7 @@ function contentMCMOT(clip) {
             let lines = fileKvlContent.trim().split('\n');
             let ppk = filePpkContent.trim().split('\n');
             lines.shift();
+            ppk.shift();
             const segments = mcmotContent.trim().split('\n');
             const rootTime = lines[0].split(",")[0]
             let startTime = frameIndexToTime(rootTime, segments[0].split(',')[0])
@@ -270,8 +270,9 @@ function contentMCMOT(clip) {
                     if (frameIndex === segments[count].split(',')[0]) {
                         xxx.push({segment: segments[count], klv: prev, ppk: ppk[index - 1], drone: drone})
                     } else {
-                        klv = crrTime - prevTime < itemTime - crrTime ?  ppk[index] :  ppk[index - 1]
-                        xxx.push({segment: segments[count], klv, ppk: ppk[index - 1], drone: drone})
+                        const klvItem = crrTime - prevTime < itemTime - crrTime ?  lines[index] :  lines[index - 1]
+                        const ppkItem = crrTime - prevTime < itemTime - crrTime ?  ppk[index] :  ppk[index - 1]
+                        xxx.push({segment: segments[count], klv: klvItem, ppk: ppkItem, drone: drone})
                         frameIndex = segments[count].split(',')[0]
                         crrTime = frameIndexToTime(rootTime, frameIndex)
                     }
