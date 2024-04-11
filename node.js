@@ -281,6 +281,7 @@ function contentMCMOT(clip) {
                 index++
             }
         })
+        console.log(xxx[0].klv.split(",")[13])
         for (let i = 0; i < xxx.length; i++) {
             const values = xxx[i].segment.split(",");
             const ppk = xxx[i].ppk.split(",");
@@ -316,35 +317,35 @@ function contentMCMOT(clip) {
             resultTargetBox += '\t\t<truncation>' + valueToText( values[7] ) + '</truncation>\n';
             resultTargetBox += '\t\t<occlusion>' + valueToText( values[8] ) + '</occlusion>\n';
             resultTargetBox += '\t\t<precision_time_stamp>' + valueToText(klv[0] ) + '</precision_time_stamp>\n';
-            resultTargetBox += '\t\t<platform_tail_number>' + valueToText(klv[1] ) + '</platform_tail_number>\n';
-            resultTargetBox += '\t\t<platform_heading_angle>' + valueToText(klv[2] ) + '</platform_heading_angle>\n';
-            resultTargetBox += '\t\t<platform_pitch_angle>' + valueToText(klv[3] ) + '</platform_pitch_angle>\n';
-            resultTargetBox += '\t\t<platform_roll_angle>' + valueToText(klv[4] ) + '</platform_roll_angle>\n';
-            resultTargetBox += '\t\t<platform_designation>' + valueToText(klv[5] ) + '</platform_designation>\n';
-            resultTargetBox += '\t\t<image_source_sensor>' + valueToText(klv[6] ) + '</image_source_sensor>\n';
-            resultTargetBox += '\t\t<sensor_latitude>' + valueToText(klv[7] ) + '</sensor_latitude>\n';
-            resultTargetBox += '\t\t<sensor_longitude>' + valueToText(klv[8] ) + '</sensor_longitude>\n';
-            resultTargetBox += '\t\t<sensor_true_altitude>' + valueToText(klv[9] ) + '</sensor_true_altitude>\n';
-            resultTargetBox += '\t\t<sensor_horizontal_field_of_view>' + valueToText(klv[11] ) + '</sensor_horizontal_field_of_view>\n';
-            resultTargetBox += '\t\t<sensor_vertical_field_of_view>' + valueToText(klv[12] ) + '</sensor_vertical_field_of_view>\n';
-            resultTargetBox += '\t\t<sensor_relative_azimuth_angle>' + valueToText(klv[13] ) + '</sensor_relative_azimuth_angle>\n';
-            resultTargetBox += '\t\t<sensor_relative_elevation_angle>' + valueToText(klv[14] ) + '</sensor_relative_elevation_angle>\n';
-            resultTargetBox += '\t\t<sensor_relative_roll_angle>' + valueToText(klv[15] ) + '</sensor_relative_roll_angle>\n';
-            resultTargetBox += '\t\t<slant_range>' + valueToText(klv[16] ) + '</slant_range>\n';
-            resultTargetBox += '\t\t<frame_center_latitude>' + valueToText(klv[17] ) + '</frame_center_latitude>\n';
-            resultTargetBox += '\t\t<frame_center_longitude>' + valueToText(klv[18] ) + '</frame_center_longitude>\n';
-            resultTargetBox += '\t\t<frame_center_elevation>' + valueToText(klv[19] ) + '</frame_center_elevation>\n';
-            resultTargetBox += '\t\t<offset_corner_latitude_point_1>' + valueToText(klv[20] ) + '</offset_corner_latitude_point_1>\n';
-            resultTargetBox += '\t\t<offset_corner_longitude_point_1>' + valueToText(klv[21] ) + '</offset_corner_longitude_point_1>\n';
-            resultTargetBox += '\t\t<offset_corner_latitude_point_2>' + valueToText(klv[22] ) + '</offset_corner_latitude_point_2>\n';
-            resultTargetBox += '\t\t<offset_corner_longitude_point_2>' + valueToText(klv[23] ) + '</offset_corner_longitude_point_2>\n';
-            resultTargetBox += '\t\t<offset_corner_latitude_point_3>' + valueToText(klv[24] ) + '</offset_corner_latitude_point_3>\n';
-            resultTargetBox += '\t\t<offset_corner_longitude_point_3>' + valueToText(klv[25] ) + '</offset_corner_longitude_point_3>\n';
-            resultTargetBox += '\t\t<offset_corner_latitude_point_4>' + valueToText(klv[26] ) + '</offset_corner_latitude_point_4>\n';
-            resultTargetBox += '\t\t<offset_corner_longitude_point_4>' + valueToText(klv[27] ) + '</offset_corner_longitude_point_4>\n';
-            resultTargetBox += '\t\t<plaftform_speed>' + valueToText(klv[28] ) + '</plaftform_speed>\n';
-            resultTargetBox += '\t\t<sensor_exposure_time>' + valueToText(klv[29] ) + '</sensor_exposure_time>\n';
-            resultTargetBox += '\t\t<platform-cam_rotation_matrix>' + valueToText(klv[30] ) + '</platform-cam_rotation_matrix>\n';
+            resultTargetBox += '\t\t<platform_tail_number>' + valueToText(klv[-1] ) + '</platform_tail_number>\n';
+            resultTargetBox += '\t\t<platform_heading_angle>' + valueToText(klv[1] ) + '</platform_heading_angle>\n';
+            resultTargetBox += '\t\t<platform_pitch_angle>' + valueToText(klv[2] ) + '</platform_pitch_angle>\n';
+            resultTargetBox += '\t\t<platform_roll_angle>' + valueToText(klv[3] ) + '</platform_roll_angle>\n';
+            resultTargetBox += '\t\t<platform_designation>' + valueToText(klv[-1] ) + '</platform_designation>\n';
+            resultTargetBox += '\t\t<image_source_sensor>' + valueToText(klv[4] ) + '</image_source_sensor>\n';
+            resultTargetBox += '\t\t<sensor_latitude>' + valueToText(klv[5] ) + '</sensor_latitude>\n';
+            resultTargetBox += '\t\t<sensor_longitude>' + valueToText(klv[6] ) + '</sensor_longitude>\n';
+            resultTargetBox += '\t\t<sensor_true_altitude>' + valueToText(klv[7] ) + '</sensor_true_altitude>\n';
+            resultTargetBox += '\t\t<sensor_horizontal_field_of_view>' + valueToText(klv[8] ) + '</sensor_horizontal_field_of_view>\n';
+            resultTargetBox += '\t\t<sensor_vertical_field_of_view>' + valueToText(klv[9] ) + '</sensor_vertical_field_of_view>\n';
+            resultTargetBox += '\t\t<sensor_relative_azimuth_angle>' + valueToText(klv[10] ) + '</sensor_relative_azimuth_angle>\n';
+            resultTargetBox += '\t\t<sensor_relative_elevation_angle>' + valueToText(klv[11] ) + '</sensor_relative_elevation_angle>\n';
+            resultTargetBox += '\t\t<sensor_relative_roll_angle>' + valueToText(klv[12] ) + '</sensor_relative_roll_angle>\n';
+            resultTargetBox += '\t\t<slant_range>' + valueToText(klv[13] ) + '</slant_range>\n';
+            resultTargetBox += '\t\t<frame_center_latitude>' + valueToText(klv[14] ) + '</frame_center_latitude>\n';
+            resultTargetBox += '\t\t<frame_center_longitude>' + valueToText(klv[15] ) + '</frame_center_longitude>\n';
+            resultTargetBox += '\t\t<frame_center_elevation>' + valueToText(klv[16] ) + '</frame_center_elevation>\n';
+            resultTargetBox += '\t\t<offset_corner_latitude_point_1>' + valueToText(klv[17] ) + '</offset_corner_latitude_point_1>\n';
+            resultTargetBox += '\t\t<offset_corner_longitude_point_1>' + valueToText(klv[18] ) + '</offset_corner_longitude_point_1>\n';
+            resultTargetBox += '\t\t<offset_corner_latitude_point_2>' + valueToText(klv[19] ) + '</offset_corner_latitude_point_2>\n';
+            resultTargetBox += '\t\t<offset_corner_longitude_point_2>' + valueToText(klv[20] ) + '</offset_corner_longitude_point_2>\n';
+            resultTargetBox += '\t\t<offset_corner_latitude_point_3>' + valueToText(klv[21] ) + '</offset_corner_latitude_point_3>\n';
+            resultTargetBox += '\t\t<offset_corner_longitude_point_3>' + valueToText(klv[22] ) + '</offset_corner_longitude_point_3>\n';
+            resultTargetBox += '\t\t<offset_corner_latitude_point_4>' + valueToText(klv[23] ) + '</offset_corner_latitude_point_4>\n';
+            resultTargetBox += '\t\t<offset_corner_longitude_point_4>' + valueToText(klv[24] ) + '</offset_corner_longitude_point_4>\n';
+            resultTargetBox += '\t\t<plaftform_speed>' + valueToText(klv[-1] ) + '</plaftform_speed>\n';
+            resultTargetBox += '\t\t<sensor_exposure_time>' + valueToText(klv[-1] ) + '</sensor_exposure_time>\n';
+            resultTargetBox += '\t\t<platform-cam_rotation_matrix>' + valueToText(klv[-1] ) + '</platform-cam_rotation_matrix>\n';
             resultTargetBox += '\t</object>\n';
         }
     
