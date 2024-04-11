@@ -8,14 +8,29 @@ const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./ou
 
 
 // Define input and output filenames
-const inputVideo = 'video_test.mp4';
-const outputFramesDir = 'frames';
-const outputVideo = 'videos/output_video.mp4';
 
 let inputDir = 'C:/Users/PC/Downloads/input';
 let outDir = 'C:/Users/PC/Documents/s92';
 let mod = 'all';
 let fps = 50;
+
+const PATH_STRING = {
+    test: 'Test',
+    train: 'Train',
+    val: 'Val',
+    det_mot: 'DET_MOT',
+    mcmot: 'MCMOT',
+    det: 'Annotation Det',
+    det_visualized: 'Annotation Det Visualized',
+    mot: 'Annotation MOT',
+    mot_visualized: 'Annotation MOT Visualized',
+    images: 'Images',
+    meta: 'Meta',
+    mcmot_target_box: 'Annotation MCMOT TargetBox',
+    mcmot_target_main: 'Annotation MCMOT TargetMain',
+    mcmot_target_pos: 'Annotation MCMOT TargetPos',
+    mcmot_visualized: 'Annotation MCMOT Visualized'
+}
 
 // Create a canvas and context
 const canvas = createCanvas(500, 500);
@@ -48,9 +63,9 @@ function createBaseForder(outDir) {
             if (!fs.existsSync(outDir)) {
                 // If not, create it
                 fs.mkdirSync(outDir);
-                fs.mkdirSync(outDir+'/Test');
-                fs.mkdirSync(outDir+'/Train')
-                fs.mkdirSync(outDir+'/Val');
+                fs.mkdirSync(path.join(outDir, PATH_STRING.test));
+                fs.mkdirSync(path.join(outDir, PATH_STRING.train))
+                fs.mkdirSync(path.join(outDir, PATH_STRING.val));
 
             }
             resolve()
@@ -133,7 +148,7 @@ function convertTxtToDet (clipName, droneName, file) {
         return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
 
-    const outputMetaDir = `/Train/${clipName}/DET_MOT/${droneName}/Meta`
+    const outputMetaDir = `/${PATH_STRING.train}/${clipName}/${PATH_STRING.det_mot}/${droneName}/${PATH_STRING.meta}`
     if (!fs.existsSync(outDir+ outputMetaDir)) {
         createDirectory(outputMetaDir)
     }
@@ -145,7 +160,7 @@ function convertTxtToDet (clipName, droneName, file) {
 
     // Process each line and join them with '\n' to form the new content
     const newContent = lines.map(line => processDETLine(line)).join('\n');
-    const outputFilePath = `/Train/${clipName}/DET_MOT/${droneName}/Annotation Det`;
+    const outputFilePath = `/${PATH_STRING.train}/${clipName}/${PATH_STRING.det_mot}/${droneName}/${PATH_STRING.det}`;
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
     }
@@ -185,7 +200,7 @@ function convertTxtToMOT (clipName, droneName, file) {
     
     // Process each line and join them with '\n' to form the new content
     const newContent = lines.map(line => processMOTLine(line)).join('\n');
-    const outputFilePath = `/Train/${clipName}/DET_MOT/${droneName}/Annotation MOT`;
+    const outputFilePath = `/${PATH_STRING.train}/${clipName}/${PATH_STRING.det_mot}/${droneName}/${PATH_STRING.mot}`;
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
     }
@@ -225,7 +240,6 @@ function contentMCMOT(clip) {
             const filePpkURL =  `${inputDir}/${clip}/MCMOT/${drone}/metadata_ppk.csv`;
             const mcmotFileUrl = `${inputDir}/${clip}/MCMOT/${drone}/MOT/`;
             const mcmotFiles = fs.readdirSync(mcmotFileUrl);
-            // console.log('mcmotFiles', mcmotFiles)
             const fileKvlContent = fs.readFileSync(fileKlvURL, 'utf8');
             const filePpkContent = fs.readFileSync(filePpkURL, 'utf8');
             const mcmotContent = fs.readFileSync(`${inputDir}/${clip}/MCMOT/${drone}/MOT/${mcmotFiles}`, 'utf8');
@@ -281,7 +295,6 @@ function contentMCMOT(clip) {
                 index++
             }
         })
-        console.log(xxx[0].klv.split(",")[13])
         for (let i = 0; i < xxx.length; i++) {
             const values = xxx[i].segment.split(",");
             const ppk = xxx[i].ppk.split(",");
@@ -296,7 +309,7 @@ function contentMCMOT(clip) {
             resultTargetMain += '\t\t<box_id>box' + valueToText(values[1] ) + '</box_id>\n';
             resultTargetMain += '\t</object>\n';
 
-            //add data to targetBox
+            //add data to targetPos
             resultTargetPos += '\t<object>\n';
             resultTargetPos += '\t\t<target_id_global>car' + valueToText(values[1] ) + '</target_id_global>\n';
             resultTargetPos += '\t\t<avs_id>' + valueToText(drone ) + '</avs_id>\n';
@@ -305,6 +318,8 @@ function contentMCMOT(clip) {
             resultTargetPos += '\t\t<target_pos_long>' + valueToText( ppk[2] ) + '</target_pos_long>\n';
             resultTargetPos += '\t\t<target_pos_alt>' + valueToText( ppk[3] ) + '</target_pos_alt>\n';
             resultTargetPos += '\t</object>\n';
+
+            //add data to targetBox
             resultTargetBox += '\t<object>\n';
             resultTargetBox += '\t\t<box_id>box' + valueToText( values[1] ) + '</box_id>\n';
             resultTargetBox += '\t\t<avs_id>' + valueToText( drone ) + '</avs_id>\n';
@@ -369,9 +384,9 @@ function valueToText(val) {
 function convertTxtToMCMOT(clip) {
     const [contentTargetBox, contentTargetMain, contentTargetPos] = contentMCMOT(clip)
     
-    exportXmlToFile(contentTargetBox, `${outDir}/Train/${clip}/MCMOT/Annotation MCMOT TargetBox/${clip}.xml`)
-    exportXmlToFile(contentTargetMain,  `${outDir}/Train/${clip}/MCMOT/Annotation MCMOT TargetMain/${clip}.xml`)
-    exportXmlToFile(contentTargetPos,  `${outDir}/Train/${clip}/MCMOT/Annotation MCMOT TargetPos/${clip}.xml`)
+    exportXmlToFile(contentTargetBox, `${outDir}/${PATH_STRING.train}/${clip}/${PATH_STRING.mcmot}/${PATH_STRING.mcmot_target_box}/${clip}.xml`)
+    exportXmlToFile(contentTargetMain,  `${outDir}/${PATH_STRING.train}/${clip}/${PATH_STRING.mcmot}/${PATH_STRING.mcmot_target_main}/${clip}.xml`)
+    exportXmlToFile(contentTargetPos,  `${outDir}/${PATH_STRING.train}/${clip}/${PATH_STRING.mcmot}/${PATH_STRING.mcmot_target_pos}/${clip}.xml`)
 }
 
 // Draw text 
@@ -383,7 +398,6 @@ function drawText(text, y, x, color = 'green') {
 
 // Function to draw a dot at a specific position
 function drawBoundingBox(ctx, centerX, centerY, width, height, color) {
-    // console.log(ctx, centerX, centerY, width, height, color)
     const topLeftX = centerX - width / 2;
     const topLeftY = centerY - height / 2;
 
@@ -452,7 +466,6 @@ function convertXML2JSON(xmlfile) {
                 let funs = []
                 result.root.annotation.forEach((item, index) => {
                     // Load the input image
-                    // console.log(item);
                     const url = `frames/frame_${parseInt(item.framenumber[0]) + 1}.jpg`
                     funs.push(handleImageUpload(url, parseInt(item.framenumber[0]) + 1, item.object))
                 })
@@ -499,7 +512,7 @@ async function convert(params) {
         await createBaseForder(outDir);
         const filesClips = fs.readdirSync(inputDir) || [];
         filesClips.length > 0 && filesClips.forEach(clip => {
-            const clipDir = `/Train/${clip}`;
+            const clipDir = `/${PATH_STRING.train}/${clip}`;
             createDirectory(clipDir);
             if(!mod || mod === '1') {
                 const directoryPathDET = `${inputDir}/${clip}/DET_MOT/`;
