@@ -87,7 +87,7 @@ function processDETLine(line) {
         'bbox_width': 1*values[DETInputFormat.maxx] - 1*values[DETInputFormat.minx],
         'bbox_height': 1*values[DETInputFormat.maxy] - 1*values[DETInputFormat.miny],
         'score': 0,
-        'object_category': values[DETInputFormat.cat] || 1,
+        'object_category': 1,
         'object_subcategory': 1,
         'truncation': 0,
         'occlusion': 0
@@ -165,6 +165,17 @@ function convertTxtToDet (clipName, droneName, file) {
         createDirectory(outputFilePath)
     }
     fs.writeFileSync(path.join(outDir + outputFilePath, `${clipName}_${droneName}_${fileName.slice(-5)}.txt`), newContent);
+
+    if (!fs.existsSync(outDir+`/${PATH_STRING.train}/${clipName}/${PATH_STRING.det_mot}/${droneName}/${PATH_STRING.det_visualized}`)) {
+        createDirectory(`/${PATH_STRING.train}/${clipName}/${PATH_STRING.det_mot}/${droneName}/${PATH_STRING.det_visualized}`)
+    }
+    const imgURL = path.join(inputDir, clipName, 'DET_MOT', droneName, 'images', fileName+'.png');
+    const pathOutImg = path.join(outDir, PATH_STRING.train, clipName, PATH_STRING.det_mot, droneName, PATH_STRING.det_visualized, `${clipName}_${droneName}_${fileName.slice(-5)}.jpg`);
+    handleImageUpload(imgURL, pathOutImg, lines)
+
+    // var inStr = fs.createReadStream(imgURL);
+    // var outStr = fs.createWriteStream(path.join(outDir, PATH_STRING.train, clipName, PATH_STRING.det_mot, droneName, PATH_STRING.images));
+    // inStr.pipe(outStr);
 }
 
 function processMOTLine(line) {
@@ -175,7 +186,7 @@ function processMOTLine(line) {
    
     const newValues = {
         'frame_index': values[MOTInputFormat.frameNo],
-        'target_id': `${values[MOTInputFormat.name]}_${values[MOTInputFormat.id]}`,
+        'target_id': `car0${values[MOTInputFormat.id]}`,
         'bbox_cx': cx,
         'bbox_cy': cy,
         'bbox_width': values[MOTInputFormat.width],
@@ -197,6 +208,7 @@ function convertTxtToMOT (clipName, droneName, file) {
 
     // Split the file content by new line character '\n'
     const lines = fileContent.trim().split('\n');
+    console.log('lines', lines)
     
     // Process each line and join them with '\n' to form the new content
     const newContent = lines.map(line => processMOTLine(line)).join('\n');
@@ -392,23 +404,24 @@ function convertTxtToMCMOT(clip) {
 // Draw text 
 function drawText(text, y, x, color = 'green') {
      ctx.fillStyle = color;
-     ctx.font = '12px Arial';
+     ctx.font = 'normal 900 14px Arial';
      ctx.fillText(text, y, x);
 }
 
 // Function to draw a dot at a specific position
 function drawBoundingBox(ctx, centerX, centerY, width, height, color) {
+    console.log('ctx, centerX, centerY, width, height, color', ctx, centerX, centerY, width, height, color)
     const topLeftX = centerX - width / 2;
     const topLeftY = centerY - height / 2;
 
     // Draw the bounding box
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.strokeRect(topLeftX, topLeftY, width, height);
 }
 
 // Function to handle image upload
-function handleImageUpload(fileInput, id, objects) {
+function handleImageUpload(fileInput, path, objects) {
     return new Promise((resolve, reject) => {
         fs.readFile(fileInput, (err, data) => {
             if (err) throw err;
@@ -417,22 +430,22 @@ function handleImageUpload(fileInput, id, objects) {
                 canvas.width = img.width;
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
-    
                 // Draw bounding box and text
+                console.log('objects', objects)
                 objects.forEach(object => {
-                    const item = object.bndbox[0]
-                    const width = +item.width[0]
-                    const height = +item.height[0]
-                    const ymax = +item.ymin[0] + item.height[0]
-                    const xmax = +item.xmin[0] + item.width[0]
-                    const xcenter = +item.ymin[0] + item.height[0]/2
-                    const ycenter = +item.xmin[0] + + item.width[0]/2
-                    drawText(`${object.name[0]}_${object.id[0]}`, xcenter, ycenter);
-                    drawBoundingBox(ctx, xcenter, ycenter, width, height, 'red'); 
+                    object = object.split(',')
+                    const xcenter = (object[3]*1 + object[5]*1) /2;
+                    const ycenter = (object[4]*1 + object[6]*1) /2;
+                    const width = (object[5]*1 - object[3]*1);
+                    const height = (object[6]*1 - object[4]*1);
+
+                    drawText(`1`, xcenter - width/2 + 2, ycenter - height/2 - 5);
+                    drawBoundingBox(ctx, xcenter, ycenter, width, height, 'green'); 
                 });
     
                 // Save the canvas as an image file
-                const out = fs.createWriteStream(`frames2/frame_${id}.jpg`);
+                console.log('00000', path)
+                const out = fs.createWriteStream(path);
                 const stream = canvas.createPNGStream();
                 stream.pipe(out);
                 out.on('finish', () => console.log('The image was saved.'));
@@ -533,9 +546,9 @@ async function convert(params) {
                         });
 
                         const motFolderFiles = fs.readdirSync(path.join(directoryPathDET + drone, 'MOT'))
-                        const motFiles = motFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt');
+                        //const motFiles = motFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt');
                         // Process each .txt file
-                        motFiles.forEach(file => {
+                        motFolderFiles.forEach(file => {
                             convertTxtToMOT(clip, drone, file);
                         });
                     });
