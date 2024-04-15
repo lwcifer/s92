@@ -46,20 +46,31 @@ const KLVInputFormat = [
 ]
 
 const PPKInputFormat = [
-    "percentUTC",
+    'precisionTimeStamp',
+    'platformHeadingAngle',
+    'platformPitchAngle',
+    'platformRollAngle',
+    'imageSourceSensor',
     'sensorLatitude',
     'sensorLongitude',
     'sensorTrueAltitude',
-    "Q",
-    "ns",
-    "sdnM",
-    "sdeM",
-    "sduM",
-    "sdneM",
-    "sdeuM",
-    "sdunM",
-    "ageS",
-    "ratio"
+    'sensorHorizontalFieldOfView',
+    'sensorVerticalFieldOfView',
+    'sensorRelativeAzimuthAngle',
+    'sensorRelativeElevationAngle',
+    'sensorRelativeRollAngle',
+    'slantRange',
+    'frameCenterLatitude',
+    'frameCenterLongitude',
+    'frameCenterElevation',
+    'offsetCornerLatitudePoint',
+    'offsetCornerLongitudePoint',
+    'offsetCornerLatitudePoint',
+    'offsetCornerLongitudePoint',
+    'offsetCornerLatitudePoint',
+    'offsetCornerLongitudePoint',
+    'offsetCornerLatitudePoint',
+    'offsetCornerLongitudePoint'
 ]
 
 module.exports = {
