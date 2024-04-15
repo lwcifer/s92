@@ -87,3 +87,8 @@ label {
 label +* {
     flex: 1;
 }
+
+.loading #convertButton {
+    cursor: default;
+    pointer-events: none;
+}
