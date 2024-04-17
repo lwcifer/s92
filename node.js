@@ -319,11 +319,25 @@ function contentMCMOT(date, clip) {
                 const item = lines[index]
                 const itemTime = (new Date(item.split(',')[0])).getTime();
 
-                if (itemTime - crrTime >= 0) {
-                    const prev = index > 0 ? lines[index - 1] : lines[index]
+                if (itemTime - crrTime > 0) {
+                    let prev = index > 0 ? lines[index - 1] : lines[index]
                     const ppkI = index > 0 ? ppk[index - 1] : ppk[index]
                     const prevTime = new Date(prev.split(',')[0]).getTime();
                     if (frameIndex === segments[count].split(',')[0]) {
+                        switch (drone) {
+                            case '2':
+                                prev = prev + `,-11,2,0.7,184.6`;
+                                break;
+                            case '3':
+                                prev = prev + `,5,0.4,2,178`;
+                                break;
+                            case '4':
+                                prev = prev + `,-11,-2,0.6,182`;
+                                break;
+                            case '5':
+                                prev = prev + `,-11,-0.6,-3,181`;
+                                break;
+                        }
                         xxx.push({segment: segments[count], klv: prev, ppk: ppkI, drone})
                     } else {
                         if (Math.abs(crrTime - prevTime) < Math.abs(itemTime - crrTime)) index--
@@ -333,6 +347,23 @@ function contentMCMOT(date, clip) {
                             klvItem = prev
                             ppkItem = index > 0 ? ppk[index - 1] : ppk[index]
                         }
+                        // console.log('111111111: ', klvItem)
+                        switch (drone) {
+                            case '2':
+                                klvItem = klvItem + `,-11,2,0.7,184.6`;
+                                break;
+                            case '3':
+                                klvItem = klvItem + `,5,0.4,2,178`;
+                                break;
+                            case '4':
+                                klvItem = klvItem + `,-11,-2,0.6,182`;
+                                break;
+                            case '5':
+                                klvItem = klvItem + `,-11,-0.6,-3,181`;
+                                break;
+                        }
+                        console.log('222222222: ', klvItem.split(',')[26])
+
                         xxx.push({segment: segments[count], klv: klvItem, ppk: ppkItem, drone})
                         frameIndex = segments[count].split(',')[0]
                         crrTime = frameIndexToTime(rootTime, frameIndex)
@@ -344,20 +375,23 @@ function contentMCMOT(date, clip) {
                 }
             }
         })
-
+        const ck = {}
         for (let i = 0; i < xxx.length; i++) {
             const values = xxx[i].segment.split(",");
             const ppk = xxx[i].ppk.split(",");
             const klv = xxx[i].klv.split(",");
             const drone = xxx[i].drone;
-
+            console.log('klv:', klv[26])
             //add data to targetMain
-            resultTargetMain += '\t<object>\n';
-            resultTargetMain += '\t\t<target_id_global>car0' + valueToText(values[1]) + '</target_id_global>\n';
-            resultTargetMain += '\t\t<object_category>' + '1' + '</object_category>\n';
-            resultTargetMain += '\t\t<object_subcategory>' + '1' + '</object_subcategory>\n';
-            resultTargetMain += '\t\t<box_id>box0' + valueToText(values[1]) + '</box_id>\n';
-            resultTargetMain += '\t</object>\n';
+            if (!ck[values[1]] ) {
+                resultTargetMain += '\t<object>\n';
+                resultTargetMain += '\t\t<target_id_global>car0' + valueToText(values[1]) + '</target_id_global>\n';
+                resultTargetMain += '\t\t<object_category>' + '1' + '</object_category>\n';
+                resultTargetMain += '\t\t<object_subcategory>' + '1' + '</object_subcategory>\n';
+                resultTargetMain += '\t\t<box_id>box0' + valueToText(values[1]) + '</box_id>\n';
+                resultTargetMain += '\t</object>\n';
+                ck[values[1]] = 1
+            }
 
             //add data to targetPos
             resultTargetPos += '\t<object>\n';
@@ -408,9 +442,13 @@ function contentMCMOT(date, clip) {
             resultTargetBox += '\t\t<offset_corner_longitude_point_3>' + valueToText(klv[22]) + '</offset_corner_longitude_point_3>\n';
             resultTargetBox += '\t\t<offset_corner_latitude_point_4>' + valueToText(klv[23]) + '</offset_corner_latitude_point_4>\n';
             resultTargetBox += '\t\t<offset_corner_longitude_point_4>' + valueToText(klv[24]) + '</offset_corner_longitude_point_4>\n';
-            resultTargetBox += '\t\t<plaftform_speed>' + valueToText(klv[-1]) + '</plaftform_speed>\n';
-            resultTargetBox += '\t\t<sensor_exposure_time>' + valueToText(klv[-1]) + '</sensor_exposure_time>\n';
-            resultTargetBox += '\t\t<platform-cam_rotation_matrix>' + valueToText(klv[-1]) + '</platform-cam_rotation_matrix>\n';
+            resultTargetBox += '\t\t<plaftform_speed>' + '0' + '</plaftform_speed>\n';
+            // resultTargetBox += '\t\t<sensor_exposure_time>' + valueToText(klv[-1]) + '</sensor_exposure_time>\n';
+            // resultTargetBox += '\t\t<platform-cam_rotation_matrix>' + valueToText(klv[-1]) + '</platform-cam_rotation_matrix>\n';   
+            resultTargetBox += '\t\t<ins_pitch_alignment_day>' + valueToText(klv[25]) + '</ins_pitch_alignment_day>\n';
+            resultTargetBox += '\t\t<px2cb_x_day>' + valueToText(klv[26]) + '</px2cb_x_day>\n';
+            resultTargetBox += '\t\t<px2cb_y_day>' + valueToText(klv[27]) + '</px2cb_y_day>\n';
+            resultTargetBox += '\t\t<px2cb_z_day>' + valueToText(klv[28]) + '</px2cb_z_day>\n';
             resultTargetBox += '\t</object>\n';
         }
     }
