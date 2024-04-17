@@ -5,6 +5,7 @@ const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const { DETInputFormat, MOTInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
 const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
+const { handleImageMoving } = require('./images');
 
 
 // Define input and output filenames
@@ -41,8 +42,7 @@ const ctx = canvas.getContext('2d');
 // Function to create directory recursively
 function createDirectory(dirPath) {
     // Split the path into individual directories
-    const dirs = dirPath.split(path.posix.sep);
-
+    const dirs = dirPath.split(path.sep);
     // Initialize current path as the root directory
     let currentPath = '';
     // Iterate through each directory in the path
@@ -112,7 +112,9 @@ function frameIndexToTime(startTime, index) {
 
 let indexOfFrame = 1;
 function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
-    const fileURL = path.join(inputDir, date, 'DETMOT', unplanned ? 'Unplanned' : 'Planned', droneName, clipName, 'TXT', file);
+    const plannedText = unplanned ? 'Unplanned' : 'Planned';
+    const inputClipDir = path.join(inputDir, date, 'DETMOT', plannedText, droneName, clipName);
+    const fileURL = path.join(inputClipDir, 'TXT', file);
     // Read the file content synchronously
     const fileContent = fs.readFileSync(fileURL, 'utf8');
     const fileName = file.split('.')[0];
@@ -120,12 +122,12 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     const lines = fileContent.trim().split('\n');
 
     //get Content metadata klv
-    const klvFileUrl = path.join(inputDir, date, 'DETMOT', unplanned ? 'Unplanned' : 'Planned', droneName, clipName, 'metadata_klv.csv');
+    const klvFileUrl = path.join(inputClipDir, 'metadata_klv.csv');
     const fileKLVContent = fs.readFileSync(klvFileUrl, 'utf8');
     const linesKLV = fileKLVContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
 
     //get content metadata ppk
-    const ppkFileUrl = path.join(inputDir, date, 'DETMOT', unplanned ? 'Unplanned' : 'Planned', droneName, clipName, 'metadata_ppk.csv')
+    const ppkFileUrl = path.join(inputClipDir, 'metadata_ppk.csv')
     const filePPKContent = fs.readFileSync(ppkFileUrl, 'utf8');
     const linesPPK = filePPKContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
 
@@ -150,7 +152,8 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
         return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
 
-    const outputMetaDir = `/${date}/${PATH_STRING.train}/${PATH_STRING.det_mot}/${unplanned ? 'Unplanned' : 'Planned'}/${droneName}/${clipName}/${PATH_STRING.meta}`
+    const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, droneName, clipName);
+    const outputMetaDir = path.join(outputDir, PATH_STRING.meta)
     if (!fs.existsSync(outDir+ outputMetaDir)) {
         createDirectory(outputMetaDir)
     }
@@ -162,22 +165,24 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
 
     // Process each line and join them with '\n' to form the new content
     const newContent = lines.map(line => processDETLine(line)).join('\n');
-    const outputFilePath = `/${date}/${PATH_STRING.train}/${PATH_STRING.det_mot}/${unplanned ? 'Unplanned' : 'Planned'}/${droneName}/${clipName}/${PATH_STRING.det}`;
-    if (!fs.existsSync(outDir+outputFilePath)) {
-        createDirectory(outputFilePath)
+    const outputDETPath = path.join(outputDir, PATH_STRING.det);
+    if (!fs.existsSync(outDir+outputDETPath)) {
+        createDirectory(outputDETPath)
     }
-    fs.writeFileSync(path.join(outDir + outputFilePath, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.txt`), newContent);
+    fs.writeFileSync(path.join(outDir, outputDETPath, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.txt`), newContent);
 
-    if (!fs.existsSync(outDir+`/${date}/${PATH_STRING.train}/${PATH_STRING.det_mot}/${unplanned ? 'Unplanned' : 'Planned'}/${droneName}/${clipName}/${PATH_STRING.det_visualized}`)) {
-        createDirectory(`/${date}/${PATH_STRING.train}/${PATH_STRING.det_mot}/${unplanned ? 'Unplanned' : 'Planned'}/${droneName}/${clipName}/${PATH_STRING.det_visualized}`)
+    const outputDETVisualizedPath = path.join(outputDir, PATH_STRING.det_visualized);
+    if (!fs.existsSync(outDir + outputDETVisualizedPath)) {
+        createDirectory(outputDETVisualizedPath)
     }
-    const imgURL = path.join(inputDir, date, 'DETMOT', unplanned ? 'Unplanned' : 'Planned', droneName, clipName, 'images', fileName+'.png');
-    const pathOutImg = path.join(outDir, date, PATH_STRING.train, PATH_STRING.det_mot, unplanned ? 'Unplanned' : 'Planned', droneName, clipName, PATH_STRING.det_visualized, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`);
+    const imgURL = path.join(inputClipDir, 'images', fileName+'.png');
+    const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`);
     handleImageUpload(imgURL, pathOutImg, lines)
 
-    // var inStr = fs.createReadStream(imgURL);
-    // var outStr = fs.createWriteStream(path.join(outDir, PATH_STRING.train, clipName, PATH_STRING.det_mot, droneName, PATH_STRING.images));
-    // inStr.pipe(outStr);
+    if (!fs.existsSync(path.join(outDir, outputDir, PATH_STRING.images))) {
+        createDirectory(path.join(outputDir, PATH_STRING.images))
+    }
+    handleImageMoving(imgURL, path.join(outDir, outputDir, PATH_STRING.images, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`))
 }
 
 function processMOTLine(line) {
@@ -204,8 +209,10 @@ function processMOTLine(line) {
 }
 
 function convertTxtToMOT (date, droneName, clipName, file, unplanned = true) {
+    const plannedText = unplanned ? 'Unplanned' : 'Planned';
+    const inputClipDir = path.join(inputDir, date, 'DETMOT', plannedText, droneName, clipName);
     // Read the file content synchronously
-    const fileURL = path.join(inputDir, date, 'DETMOT', unplanned ? 'Unplanned' : 'Planned', droneName, clipName, 'MOT', file);
+    const fileURL = path.join(inputClipDir, 'MOT', file);
     const fileContent = fs.readFileSync(fileURL, 'utf8');
 
     // Split the file content by new line character '\n'
@@ -213,7 +220,7 @@ function convertTxtToMOT (date, droneName, clipName, file, unplanned = true) {
     
     // Process each line and join them with '\n' to form the new content
     const newContent = lines.map(line => processMOTLine(line)).join('\n');
-    const outputFilePath = `/${date}/${PATH_STRING.train}/${PATH_STRING.det_mot}/${unplanned ? 'Unplanned' : 'Planned'}/${droneName}/${clipName}/${PATH_STRING.mot}`;
+    const outputFilePath = `/${date}/${PATH_STRING.train}/${PATH_STRING.det_mot}/${plannedText}/${droneName}/${clipName}/${PATH_STRING.mot}`;
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
     }
@@ -287,6 +294,10 @@ function contentMCMOT(date, clip) {
     let xxx = []
     if(filesMCMOTDrones.length > 0) {
         filesMCMOTDrones.forEach(drone => {
+            const filesInDrones = fs.readdirSync(path.join(mcmotDronesDir, drone));
+            if(filesInDrones.length === 0 ) {
+                return;
+            }
             // Read the file content synchronously
             const fileKlvURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_klv.csv`;
             const filePpkURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_ppk.csv`;
@@ -475,6 +486,33 @@ function convertTxtToMCMOT(date, clip) {
     exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}.xml`)
     exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`)
     exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}.xml`)
+
+    const clipFolderFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip));
+    clipFolderFiles.forEach(drone => {
+        const droneOutDir = path.join(date, PATH_STRING.train,'MCMOT', clip, drone)
+        if (!fs.existsSync(outDir+droneOutDir)) {
+            createDirectory(droneOutDir)
+        }
+
+        const filesInDrones = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip, drone));
+        if(filesInDrones.length === 0 ) {
+            return;
+        }
+
+        const droneImgOutDir = path.join(droneOutDir, PATH_STRING.mcmot_visualized);
+        if (!fs.existsSync(outDir+droneImgOutDir)) {
+            createDirectory(droneImgOutDir)
+        }
+
+        const droneImgFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip, drone, 'images'));
+        if(droneImgFiles.length > 0) {
+            droneImgFiles.forEach(img => {
+                const imgURL = path.join(inputDir, date, 'MCMOT', clip, drone, 'images', img);
+                const fileName = img.split('.')[0];
+                handleImageMoving(imgURL, path.join(outDir, droneImgOutDir, `${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`))
+            })
+        }
+    })
 }
 
 // Draw text 
@@ -606,38 +644,45 @@ async function convert(params) {
                 createBaseForder(path.join(outDir, date));
                 
                 if(!mod || mod === '1') {
-                    const dirDETMOTUnplanned = `${inputDir}/${date}/DETMOT/Unplanned`;
+                    const DETMOTFolder = fs.readdirSync(`${inputDir}/${date}/DETMOT`);
 
-                    // Read all files in the directory
-                    const filesDETDrones = fs.readdirSync(dirDETMOTUnplanned);
-
-                    if(filesDETDrones.length > 0) {
-                        filesDETDrones.forEach(drone => {
-                            const droneDir = path.join(dirDETMOTUnplanned, drone);
-                            // Read all files in the Unplanned directory
-                            const filesDETClips = fs.readdirSync(droneDir);
-                            if(filesDETClips.length > 0) {
-                                filesDETClips.forEach(clip => {
-                                    indexOfFrame = 1;
-                                    const clipDir = path.join(droneDir, clip);
-                                    const detFolderFiles = fs.readdirSync(path.join(clipDir, 'TXT'))
-                                    // Filter out only .txt files
-                                    const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
-                                    // Process each .txt file
-                                    detFiles.forEach(file => {
-                                        convertTxtToDet(date, drone, clip, file, true);
-                                    });
-                
-                                    const motFolderFiles = fs.readdirSync(path.join(clipDir, 'MOT'))
-                                    //const motFiles = motFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt');
-                                    // Process each .txt file
-                                    motFolderFiles.forEach(file => {
-                                        convertTxtToMOT(date, drone, clip, file, true);
-                                    });
-                                })
-                            }
-                        });
-                    };
+                    if(DETMOTFolder.length > 0) {
+                        DETMOTFolder.forEach(unplanned => {
+                            const dirDETMOTUnplanned = `${inputDir}/${date}/DETMOT/${unplanned}`;
+                            createDirectory(path.join(date, PATH_STRING.train,  PATH_STRING.det_mot, unplanned))
+                            // Read all files in the directory
+                            const filesDETDrones = fs.readdirSync(dirDETMOTUnplanned);
+        
+                            if(filesDETDrones.length > 0) {
+                                filesDETDrones.forEach(drone => {
+                                    const droneDir = path.join(dirDETMOTUnplanned, drone);
+                                    createDirectory(path.join(date, PATH_STRING.train,  PATH_STRING.det_mot, unplanned, drone))
+                                    // Read all files in the Unplanned directory
+                                    const filesDETClips = fs.readdirSync(droneDir);
+                                    if(filesDETClips.length > 0) {
+                                        filesDETClips.forEach(clip => {
+                                            indexOfFrame = 1;
+                                            const clipDir = path.join(droneDir, clip);
+                                            const detFolderFiles = fs.readdirSync(path.join(clipDir, 'TXT'))
+                                            // Filter out only .txt files
+                                            const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
+                                            // Process each .txt file
+                                            detFiles.forEach(file => {
+                                                convertTxtToDet(date, drone, clip, file, unplanned === 'Unplanned');
+                                            });
+                        
+                                            const motFolderFiles = fs.readdirSync(path.join(clipDir, 'MOT'))
+                                            //const motFiles = motFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt');
+                                            // Process each .txt file
+                                            motFolderFiles.forEach(file => {
+                                                convertTxtToMOT(date, drone, clip, file, unplanned === 'Unplanned');
+                                            });
+                                        })
+                                    }
+                                });
+                            };
+                        })
+                    }
                 }
 
                 if(!mod || mod === '2') {
