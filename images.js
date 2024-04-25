@@ -17,7 +17,7 @@ function handleImageMoving(fileInput, outPath) {
             const out = fs.createWriteStream(outPath);
             const stream = canvas.createJPEGStream({quality: 1});
             stream.pipe(out);
-            out.on('finish', () => console.log('The image was saved.'));
+            // out.on('finish', () => console.log('The image was saved.'));
         }).catch((err) => {
             console.error('Error loading image:', err);
         });

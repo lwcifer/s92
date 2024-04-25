@@ -107,7 +107,7 @@ function frameIndexToTime(startTime, index) {
     const timestamp = (index / fps) * 1000
     const date = new Date(startTime)
     const timestampFromDateString = date.getTime() + timestamp
-    return new Date(timestampFromDateString)
+    return timestampFromDateString
 }
 
 let indexOfFrame = 1;
@@ -320,79 +320,77 @@ function contentMCMOT(date, clip) {
             lines = res.res;
             ppk = res.ppk;
 
-            let count = 0
-            let index = 0
-            // xxx.push({segment: segments[0], klv: lines[0], ppk: ppk[0], drone: drone})
-            let frameIndex = segments[count].split(',')[0]
-            let crrTime = frameIndexToTime(rootTime, frameIndex)
+            const zzz = [frameIndexToTime(rootTime, 17521)]
+            zzz.push(frameIndexToTime(rootTime, 17522))
+            zzz.push(17123,frameIndexToTime(rootTime, 17123))
+            zzz.push(frameIndexToTime(rootTime, 17124))
+            zzz.push(frameIndexToTime(rootTime, 17125))
+            zzz.push(frameIndexToTime(rootTime, 17126))
+            zzz.push(frameIndexToTime(rootTime, 17127))
+            zzz.push(17531, frameIndexToTime(rootTime, 17531))
+            zzz.push(frameIndexToTime(rootTime, 17132))
+            zzz.push(frameIndexToTime(rootTime, 17133))
+            zzz.push(frameIndexToTime(rootTime, 17134))
+            zzz.push(frameIndexToTime(rootTime, 17135))
+            zzz.push(17141, frameIndexToTime(rootTime, 17141))
+            zzz.push(frameIndexToTime(rootTime, 17142))
+            zzz.push(frameIndexToTime(rootTime, 17143))
+            zzz.push(frameIndexToTime(rootTime, 17144))
+            zzz.push(frameIndexToTime(rootTime, 17145))
+            // console.log('zzz', zzz)
 
-            while (count < segments.length && index < lines.length) {
-                const item = lines[index]
-                const itemTime = (new Date(item.split(',')[0])).getTime();
+            function extraData(item, dr) {
+                switch (dr) {
+                    case '2':
+                        item += `,-11,2,0.7,184.6`;
+                        break;
+                    case '3':
+                        item += `,5,0.4,2,178`;
+                        break;
+                    case '4':
+                        item += `,-11,-2,0.6,182`;
+                        break;
+                    case '5':
+                        item += `,-11,-0.6,-3,181`;
+                        break;
+                }
 
-                if (itemTime - crrTime > 0) {
-                    let prev = index > 0 ? lines[index - 1] : lines[index]
-                    const ppkI = index > 0 ? ppk[index - 1] : ppk[index]
-                    const prevTime = new Date(prev.split(',')[0]).getTime();
-                    if (frameIndex === segments[count].split(',')[0]) {
-                        switch (drone) {
-                            case '2':
-                                prev = prev + `,-11,2,0.7,184.6`;
-                                break;
-                            case '3':
-                                prev = prev + `,5,0.4,2,178`;
-                                break;
-                            case '4':
-                                prev = prev + `,-11,-2,0.6,182`;
-                                break;
-                            case '5':
-                                prev = prev + `,-11,-0.6,-3,181`;
-                                break;
-                        }
-                        xxx.push({segment: segments[count], klv: prev, ppk: ppkI, drone})
+                return item
+            }
+        
+            let indexA = 0;
+            xxx.push({segment: segments[0], klv: lines[0], ppk: ppk[0], drone: drone})
+            for (let i = 1; i < segments.length; i++) {
+                if (indexA < lines.length) {
+                    const iii = segments[i].split(',')[0];
+                    const iiiTime = frameIndexToTime(rootTime, iii);
+                    let klvTime = (new Date(lines[indexA].split(',')[0])).getTime();
+                    let xx = indexA
+                    if (iii === segments[i - 1].split(',')[0]) {
+                        xxx.push({...xxx[xxx.length - 1], segment: segments[i]});
                     } else {
-                        if (Math.abs(crrTime - prevTime) < Math.abs(itemTime - crrTime)) index--
-                        let klvItem = lines[index]
-                        let ppkItem = ppk[index]
-                        if (Math.abs(new Date(klvItem.split(',')[0]).getTime() - crrTime) > Math.abs(prevTime - crrTime)) {
-                            klvItem = prev
-                            ppkItem = index > 0 ? ppk[index - 1] : ppk[index]
+                        while (indexA < lines.length && klvTime <= iiiTime) {
+                            indexA++;
+                            xx = indexA;
+                            klvTime = (new Date(lines[indexA].split(',')[0])).getTime();
+                            const nextKlvTime = (new Date(lines[indexA - 1].split(',')[0])).getTime();
+                            if (Math.abs(nextKlvTime - iiiTime) < Math.abs(iiiTime - klvTime)) {
+                                xx = indexA - 1
+                            }
                         }
-                        // console.log('111111111: ', klvItem)
-                        switch (drone) {
-                            case '2':
-                                klvItem = klvItem + `,-11,2,0.7,184.6`;
-                                break;
-                            case '3':
-                                klvItem = klvItem + `,5,0.4,2,178`;
-                                break;
-                            case '4':
-                                klvItem = klvItem + `,-11,-2,0.6,182`;
-                                break;
-                            case '5':
-                                klvItem = klvItem + `,-11,-0.6,-3,181`;
-                                break;
-                        }
-                        console.log('222222222: ', klvItem.split(',')[26])
-
-                        xxx.push({segment: segments[count], klv: klvItem, ppk: ppkItem, drone})
-                        frameIndex = segments[count].split(',')[0]
-                        crrTime = frameIndexToTime(rootTime, frameIndex)
-                        index++
+                        xxx.push({segment: segments[i], klv: lines[xx], ppk: ppk[xx], drone});
                     }
-                    count++
-                } else {
-                    index++
                 }
             }
+
         })
+
         const ck = {}
         for (let i = 0; i < xxx.length; i++) {
             const values = xxx[i].segment.split(",");
             const ppk = xxx[i].ppk.split(",");
             const klv = xxx[i].klv.split(",");
             const drone = xxx[i].drone;
-            console.log('klv:', klv[26])
             //add data to targetMain
             if (!ck[values[1]] ) {
                 resultTargetMain += '\t<object>\n';
@@ -415,12 +413,14 @@ function contentMCMOT(date, clip) {
             resultTargetPos += '\t</object>\n';
 
             //add data to targetBox
+            const cx = +values[2] + values[4]/2
+            const cy = +values[3] + values[5]/2
             resultTargetBox += '\t<object>\n';
             resultTargetBox += '\t\t<box_id>box0' + valueToText(values[1]) + '</box_id>\n';
             resultTargetBox += '\t\t<avs_id>' + valueToText(drone) + '</avs_id>\n';
             resultTargetBox += '\t\t<frame_index>' + valueToText(values[0]) + '</frame_index>\n';
-            resultTargetBox += '\t\t<bbox_cx>' + valueToText(values[2]) + '</bbox_cx>\n';
-            resultTargetBox += '\t\t<bbox_cy>' + valueToText(values[3]) + '</bbox_cy>\n';
+            resultTargetBox += '\t\t<bbox_cx>' + cx + '</bbox_cx>\n';
+            resultTargetBox += '\t\t<bbox_cy>' + cy + '</bbox_cy>\n';
             resultTargetBox += '\t\t<bbox_width>' + valueToText(values[4]) + '</bbox_width>\n';
             resultTargetBox += '\t\t<bbox_height>' + valueToText(values[5]) + '</bbox_height>\n';
             // resultTargetBox += '\t\t<score>' + valueToText(values[6]) + '</score>\n';
