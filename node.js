@@ -13,8 +13,12 @@ const { handleImageMoving } = require('./images');
 let inputDir = 'C:/Users/PC/Downloads/input';
 let outDir = 'C:/Users/PC/Documents/s92';
 let mod = 'all';
-let fps = 50;
+let fps = 30;
 const digitFileName = 5;
+
+const COLORS = [
+    'green', 'blue', 'red', 'yellow', 'purple', 'orange', 'gray', '#33A6FF', 'pink', 'lightblue', 'black'
+]
 
 const PATH_STRING = {
     test: 'Test',
@@ -284,7 +288,7 @@ function sortPromax(arr, start, ppkList) {
     return {ppk, res}
 }
 
-function contentMCMOT(date, clip) {
+function contentMCMOT(date, clip, segments) {
     let resultTargetMain = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
     let resultTargetBox = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
     let resultTargetPos = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
@@ -308,7 +312,6 @@ function contentMCMOT(date, clip) {
             const mcmotContent = fs.readFileSync(`${inputDir}/${date}/MCMOT/${clip}/${drone}/MOT/${mcmotFiles}`, 'utf8');
 
             // Split the file content by new line character '\n'
-            const segments = mcmotContent.trim().split('\n');
             let lines = fileKvlContent.trim().split('\n');
             let ppk = filePpkContent.trim().split('\n');
             lines.shift();
@@ -319,25 +322,6 @@ function contentMCMOT(date, clip) {
             const res = sortPromax(lines, startTime, ppk)
             lines = res.res;
             ppk = res.ppk;
-
-            const zzz = [frameIndexToTime(rootTime, 17521)]
-            zzz.push(frameIndexToTime(rootTime, 17522))
-            zzz.push(17123,frameIndexToTime(rootTime, 17123))
-            zzz.push(frameIndexToTime(rootTime, 17124))
-            zzz.push(frameIndexToTime(rootTime, 17125))
-            zzz.push(frameIndexToTime(rootTime, 17126))
-            zzz.push(frameIndexToTime(rootTime, 17127))
-            zzz.push(17531, frameIndexToTime(rootTime, 17531))
-            zzz.push(frameIndexToTime(rootTime, 17132))
-            zzz.push(frameIndexToTime(rootTime, 17133))
-            zzz.push(frameIndexToTime(rootTime, 17134))
-            zzz.push(frameIndexToTime(rootTime, 17135))
-            zzz.push(17141, frameIndexToTime(rootTime, 17141))
-            zzz.push(frameIndexToTime(rootTime, 17142))
-            zzz.push(frameIndexToTime(rootTime, 17143))
-            zzz.push(frameIndexToTime(rootTime, 17144))
-            zzz.push(frameIndexToTime(rootTime, 17145))
-            // console.log('zzz', zzz)
 
             function extraData(item, dr) {
                 switch (dr) {
@@ -359,7 +343,8 @@ function contentMCMOT(date, clip) {
             }
         
             let indexA = 0;
-            xxx.push({segment: segments[0], klv: lines[0], ppk: ppk[0], drone: drone})
+            const iklv0 = extraData(lines[0], drone)
+            xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], drone})
             for (let i = 1; i < segments.length; i++) {
                 if (indexA < lines.length) {
                     const iii = segments[i].split(',')[0];
@@ -378,7 +363,8 @@ function contentMCMOT(date, clip) {
                                 xx = indexA - 1
                             }
                         }
-                        xxx.push({segment: segments[i], klv: lines[xx], ppk: ppk[xx], drone});
+                        const iklv = extraData(lines[xx], drone)
+                        xxx.push({segment: segments[i], klv: iklv, ppk: ppk[xx], drone});
                     }
                 }
             }
@@ -392,19 +378,28 @@ function contentMCMOT(date, clip) {
             const klv = xxx[i].klv.split(",");
             const drone = xxx[i].drone;
             //add data to targetMain
-            if (!ck[values[1]] ) {
+            if (!ck[values[1] + values[2]] ) {
+                let category = '0'
+                switch (valueToText(values[1])) {
+                    case 'bus':
+                        category = '1'
+                        break;
+                    case 'truck':
+                        category = '2'
+                    break;
+                }
                 resultTargetMain += '\t<object>\n';
-                resultTargetMain += '\t\t<target_id_global>car0' + valueToText(values[1]) + '</target_id_global>\n';
-                resultTargetMain += '\t\t<object_category>' + '1' + '</object_category>\n';
+                resultTargetMain += '\t\t<target_id_global>' + valueToText(values[1]) + valueToText(values[2])+ '</target_id_global>\n';
+                resultTargetMain += '\t\t<object_category>' + category + '</object_category>\n';
                 resultTargetMain += '\t\t<object_subcategory>' + '1' + '</object_subcategory>\n';
-                resultTargetMain += '\t\t<box_id>box0' + valueToText(values[1]) + '</box_id>\n';
+                resultTargetMain += '\t\t<box_id>' + valueToText(values[1]) + '</box_id>\n';
                 resultTargetMain += '\t</object>\n';
-                ck[values[1]] = 1
+                ck[values[1] + values[2]] = 1
             }
 
             //add data to targetPos
             resultTargetPos += '\t<object>\n';
-            resultTargetPos += '\t\t<target_id_global>car0' + valueToText(values[1]) + '</target_id_global>\n';
+            resultTargetPos += '\t\t<target_id_global>' + valueToText(values[1]) + valueToText(values[2])+ '</target_id_global>\n';
             resultTargetPos += '\t\t<avs_id>' + valueToText(drone) + '</avs_id>\n';
             resultTargetPos += '\t\t<frame_index>' + valueToText(values[0]) + '</frame_index>\n';
             resultTargetPos += '\t\t<target_pos_lat>' + valueToText(ppk[5]) + '</target_pos_lat>\n';
@@ -416,13 +411,13 @@ function contentMCMOT(date, clip) {
             const cx = +values[2] + values[4]/2
             const cy = +values[3] + values[5]/2
             resultTargetBox += '\t<object>\n';
-            resultTargetBox += '\t\t<box_id>box0' + valueToText(values[1]) + '</box_id>\n';
+            resultTargetBox += '\t\t<box_id>' + valueToText(values[2]) + '</box_id>\n';
             resultTargetBox += '\t\t<avs_id>' + valueToText(drone) + '</avs_id>\n';
             resultTargetBox += '\t\t<frame_index>' + valueToText(values[0]) + '</frame_index>\n';
             resultTargetBox += '\t\t<bbox_cx>' + cx + '</bbox_cx>\n';
             resultTargetBox += '\t\t<bbox_cy>' + cy + '</bbox_cy>\n';
-            resultTargetBox += '\t\t<bbox_width>' + valueToText(values[4]) + '</bbox_width>\n';
-            resultTargetBox += '\t\t<bbox_height>' + valueToText(values[5]) + '</bbox_height>\n';
+            resultTargetBox += '\t\t<bbox_width>' + valueToText(values[5]) + '</bbox_width>\n';
+            resultTargetBox += '\t\t<bbox_height>' + valueToText(values[6]) + '</bbox_height>\n';
             // resultTargetBox += '\t\t<score>' + valueToText(values[6]) + '</score>\n';
             // resultTargetBox += '\t\t<truncation>' + valueToText(values[7]) + '</truncation>\n';
             // resultTargetBox += '\t\t<occlusion>' + valueToText(values[8]) + '</occlusion>\n';
@@ -480,13 +475,7 @@ function valueToText(val) {
 }
 
 function convertTxtToMCMOT(date, clip) {
-
-    const [contentTargetBox, contentTargetMain, contentTargetPos] = contentMCMOT(date, clip)
-    
-    exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}.xml`)
-    exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`)
-    exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}.xml`)
-
+    let fileData = []
     const clipFolderFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip));
     clipFolderFiles.forEach(drone => {
         const droneOutDir = path.join(date, PATH_STRING.train,'MCMOT', clip, drone)
@@ -498,7 +487,7 @@ function convertTxtToMCMOT(date, clip) {
         if(filesInDrones.length === 0 ) {
             return;
         }
-
+        
         const droneImgOutDir = path.join(droneOutDir, PATH_STRING.mcmot_visualized);
         if (!fs.existsSync(outDir+droneImgOutDir)) {
             createDirectory(droneImgOutDir)
@@ -506,11 +495,90 @@ function convertTxtToMCMOT(date, clip) {
 
         const droneImgFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip, drone, 'images'));
         if(droneImgFiles.length > 0) {
-            droneImgFiles.forEach(img => {
+            for (let i=0; i < droneImgFiles.length; i += 3) {
+                const img = droneImgFiles[i]
+
                 const imgURL = path.join(inputDir, date, 'MCMOT', clip, drone, 'images', img);
                 const fileName = img.split('.')[0];
-                handleImageMoving(imgURL, path.join(outDir, droneImgOutDir, `${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`))
-            })
+
+                const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.mcmot, drone, clip);
+                const pathOutImg = path.join(outDir, droneImgOutDir, `${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`);
+
+                if (!fs.existsSync(path.join(outDir, outputDir, PATH_STRING.images))) {
+                    createDirectory(path.join(outputDir, PATH_STRING.images))
+                }
+
+                const txtFile = `${inputDir}/${date}/MCMOT/${clip}/${drone}/TXT/${fileName}.txt`
+                let objs = []
+                if (fs.existsSync(txtFile)) {
+                    const txtFileContent = fs.readFileSync(txtFile, 'utf8');
+                    objs = txtFileContent.trim().split('\n');
+                    fileData = [...fileData, ...objs]
+                }
+                // console.log('objs', fileData)
+                handleImageBoxMCMOT(imgURL, pathOutImg, objs)
+                
+                // handleImageMoving(imgURL, path.join(outDir, droneImgOutDir, `${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`))
+            }
+
+            const [contentTargetBox, contentTargetMain, contentTargetPos] = contentMCMOT(date, clip, fileData)
+            
+            exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}.xml`)
+            exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`)
+            exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}.xml`)
+        }
+    })
+}
+
+function getRandomColor() {
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+  
+
+// Function to handle image upload
+function handleImageBoxMCMOT(fileInput, path, objects) {
+    return new Promise((resolve, reject) => {
+        try {
+            fs.readFile(fileInput, (err, data) => {
+                // if (err) resolve(err);
+        
+                loadImage(data).then((img) => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    // Draw bounding box and text
+                    objects.forEach(object => {
+                        object = object.split(',')
+                        const xcenter = object[3]*1 + object[5]/2;
+                        const ycenter = object[4]*1 + object[6]/2;
+                        const width = object[5];
+                        const height = object[6];
+                        const nem = object[1] + object[2]
+                        const boxid = object[2]
+                        const color = COLORS[parseInt(boxid)]
+                        // const color = getRandomColor()
+                        drawText(nem, xcenter - width/2 + 2, ycenter - height/2 - 5);
+                        drawBoundingBox(ctx, xcenter, ycenter, width, height, color);
+                    });
+        
+                    // Save the canvas as an image file
+                    const out = fs.createWriteStream(path);
+                    const stream = canvas.createPNGStream();
+                    stream.pipe(out);
+                    // out.on('finish', () => console.log(path));
+                    resolve()
+                }).catch((err) => {
+                    console.error('Error loading image:', err);
+                    reject()
+                });
+            });
+        } catch (error) {
+            reject()
         }
     })
 }
@@ -535,37 +603,74 @@ function drawBoundingBox(ctx, centerX, centerY, width, height, color) {
 
 // Function to handle image upload
 function handleImageUpload(fileInput, path, objects) {
+    // console.log('',fileInput)
+    // console.log('',path)
+    // console.log('',objects)
     return new Promise((resolve, reject) => {
-        fs.readFile(fileInput, (err, data) => {
-            if (err) throw err;
+        try {
+            fs.readFile(fileInput, (err, data) => {
+                // if (err) resolve(err);
+        
+                loadImage(data).then((img) => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    // Draw bounding box and text
+                    objects.forEach(object => {
+                        object = object.split(',')
+                        const xcenter = (object[3]*1 + object[5]*1) /2;
+                        const ycenter = (object[4]*1 + object[6]*1) /2;
+                        const width = (object[5]*1 - object[3]*1);
+                        const height = (object[6]*1 - object[4]*1);
     
-            loadImage(data).then((img) => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                // Draw bounding box and text
-                objects.forEach(object => {
-                    object = object.split(',')
-                    const xcenter = (object[3]*1 + object[5]*1) /2;
-                    const ycenter = (object[4]*1 + object[6]*1) /2;
-                    const width = (object[5]*1 - object[3]*1);
-                    const height = (object[6]*1 - object[4]*1);
-
-                    drawText(`1`, xcenter - width/2 + 2, ycenter - height/2 - 5);
-                    drawBoundingBox(ctx, xcenter, ycenter, width, height, 'green'); 
+                        drawText(`1`, xcenter - width/2 + 2, ycenter - height/2 - 5);
+                        drawBoundingBox(ctx, xcenter, ycenter, width, height, 'green'); 
+                    });
+        
+                    // Save the canvas as an image file
+                    const out = fs.createWriteStream(path);
+                    const stream = canvas.createPNGStream();
+                    stream.pipe(out);
+                    // out.on('finish', () => console.log(path));
+                    resolve()
+                }).catch((err) => {
+                    console.error('Error loading image:', err);
+                    reject()
                 });
-    
-                // Save the canvas as an image file
-                const out = fs.createWriteStream(path);
-                const stream = canvas.createPNGStream();
-                stream.pipe(out);
-                out.on('finish', () => console.log('The image was saved.'));
-                resolve()
-            }).catch((err) => {
-                console.error('Error loading image:', err);
-                reject()
             });
-        });
+        } catch (error) {
+            
+        }
+        // fs.readFile(fileInput, (err, data) => {
+        //     if (err) throw err;
+    
+        //     loadImage(data).then((img) => {
+        //         canvas.width = img.width;
+        //         canvas.height = img.height;
+        //         ctx.drawImage(img, 0, 0);
+        //         // Draw bounding box and text
+        //         objects.forEach(object => {
+        //             object = object.split(',')
+        //             const xcenter = (object[3]*1 + object[5]*1) /2;
+        //             const ycenter = (object[4]*1 + object[6]*1) /2;
+        //             const width = (object[5]*1 - object[3]*1);
+        //             const height = (object[6]*1 - object[4]*1);
+
+        //             drawText(`1`, xcenter - width/2 + 2, ycenter - height/2 - 5);
+        //             drawBoundingBox(ctx, xcenter, ycenter, width, height, 'green'); 
+        //         });
+    
+        //         // Save the canvas as an image file
+        //         const out = fs.createWriteStream(path);
+        //         const stream = canvas.createPNGStream();
+        //         stream.pipe(out);
+        //         // out.on('finish', () => console.log('The image was saved.'));
+        //         resolve()
+        //     }).catch((err) => {
+        //         console.error('Error loading image:', err);
+        //         reject()
+        //     });
+        // });
     })
 }
 
