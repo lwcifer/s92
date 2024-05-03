@@ -1,11 +1,11 @@
 const DETInputFormat = {
-    'name': 0,
-    'id': 1,
-    'cat':2,
+    'frameNo': 0,
+    'name': 1,
+    'id':2,
     'minx': 3,
     'miny': 4,
-    'maxx': 5,
-    'maxy': 6
+    'width': 5,
+    'height': 6
 }
 
 const MOTInputFormat = {

@@ -3,11 +3,13 @@ const fs = require('fs');
 const {parseString} = require('xml2js')
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
-const { DETInputFormat, MOTInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
+const { DETInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
 const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
-const { handleImageMoving } = require('./images');
 const { getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT } = require('./util');
 const { PATH_STRING } = require('./contanst');
+const { handleImageMoving, handleImageDET, handleImageMOT } = require('./images');
+
+
 // Define input and output filenames
 let inputDir = 'C:/Users/PC/Downloads/input';
 let outDir = 'C:/Users/PC/Documents/s92';
@@ -30,16 +32,17 @@ function frameIndexToTime(x,y) {
 function processDETLine(line) {
     // Split the line by comma ','
     const values = line.split(',').map(value => value.trim());
-    const cx = (1*values[DETInputFormat.minx] + values[DETInputFormat.minx]*1)/2;
-    const cy = (1*values[DETInputFormat.miny] + 1*values[DETInputFormat.miny])/2;
+    const cx = 1*values[DETInputFormat.minx] + values[DETInputFormat.width]/2;
+    const cy = 1*values[DETInputFormat.miny] + values[DETInputFormat.height]/2;
+    const category = values[DETInputFormat.name]?.split('_')[1];
    
     const newValues = {
         'bbox_cx': cx,
         'bbox_cy': cy,
-        'bbox_width': 1*values[DETInputFormat.maxx] - 1*values[DETInputFormat.minx],
-        'bbox_height': 1*values[DETInputFormat.maxy] - 1*values[DETInputFormat.miny],
+        'bbox_width': values[DETInputFormat.width],
+        'bbox_height': values[DETInputFormat.height],
         'score': 0,
-        'object_category': 1,
+        'object_category': category,
         'object_subcategory': 1,
         'truncation': 0,
         'occlusion': 0
@@ -52,10 +55,11 @@ let indexOfFrame = 1;
 function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     const plannedText = unplanned ? 'Unplanned' : 'Planned';
     const inputClipDir = path.join(inputDir, date, 'DETMOT', plannedText, droneName, clipName);
-    const fileURL = path.join(inputClipDir, 'TXT', file);
+    const fileName = file.split('.')[0];
+
+    const fileURL = path.join(inputClipDir, 'TXT', fileName+'.txt');
     // Read the file content synchronously
     const fileContent = fs.readFileSync(fileURL, 'utf8');
-    const fileName = file.split('.')[0];
     // Split the file content by new line character '\n'
     const lines = fileContent.trim().split('\n');
 
@@ -114,30 +118,68 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
         createDirectory(outputDETVisualizedPath)
     }
     const imgURL = path.join(inputClipDir, 'images', fileName+'.png');
+
     const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`);
-    handleImageUpload(imgURL, pathOutImg, lines)
+
+    const outputMOTVisualizedPath = path.join(outputDir, PATH_STRING.mot_visualized);
+    const pathOutMOTVisualized = path.join(outDir, outputMOTVisualizedPath, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`);
+    if (!fs.existsSync(outDir + outputMOTVisualizedPath)) {
+        createDirectory(outputMOTVisualizedPath)
+    }
+    handleImageDET(imgURL, pathOutImg, pathOutMOTVisualized, lines)
+    handleImageMOT(imgURL, pathOutMOTVisualized, lines)
 
     if (!fs.existsSync(path.join(outDir, outputDir, PATH_STRING.images))) {
         createDirectory(path.join(outputDir, PATH_STRING.images))
     }
     handleImageMoving(imgURL, path.join(outDir, outputDir, PATH_STRING.images, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`))
+
+    //return MOT content file
+    const newContentMOT = lines.map(line => processMOTLine(line, fileName)).join('\n');
+    return newContentMOT;
 }
 
-function processMOTLine(line) {
+function convertInputToDETMOT(date, drone, clip, droneDir, unplanned) {
+    indexOfFrame = 1;
+    const plannedText = unplanned ? 'Unplanned' : 'Planned';
+    const motContentFile = [];
+    const clipDir = path.join(droneDir, clip);
+    if(fs.readdirSync(path.join(clipDir)).length === 0 ) return;
+    const detFolderFiles = fs.readdirSync(path.join(clipDir, 'TXT'))
+    // Filter out only .txt files
+    const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
+    // Process each .txt file
+    detFiles.forEach(file => {
+        const contentLine = convertTxtToDet(date, drone, clip, file, unplanned);
+        motContentFile.push(contentLine);
+    });
+
+    const newContent = motContentFile.join('\n');
+
+    const outputFilePath = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, drone, clip, PATH_STRING.mot);
+
+    if (!fs.existsSync(outDir+outputFilePath)) {
+        createDirectory(outputFilePath)
+    }
+    fs.writeFileSync(path.join(outDir, outputFilePath, `${date}_${drone}_${clip}.txt`), newContent);
+}
+
+function processMOTLine(line, fileName) {
     // Split the line by comma ','
     const values = line.split(',').map(value => value.trim());
-    const cx = 1*values[MOTInputFormat.minx] + values[MOTInputFormat.width]/2;
-    const cy = 1*values[MOTInputFormat.miny] + values[MOTInputFormat.height]/2;
-   
+    const cx = 1*values[DETInputFormat.minx] + values[DETInputFormat.width]/2;
+    const cy = 1*values[DETInputFormat.miny] + values[DETInputFormat.height]/2;
+    const target_id = values[DETInputFormat.name]?.split('_');
+
     const newValues = {
-        'frame_index': values[MOTInputFormat.frameNo],
-        'target_id': `car0${values[MOTInputFormat.id]}`,
+        'frame_index': fileName.slice(-digitFileName),
+        'target_id': target_id[0],
         'bbox_cx': cx,
         'bbox_cy': cy,
-        'bbox_width': values[MOTInputFormat.width],
-        'bbox_height': values[MOTInputFormat.height],
+        'bbox_width': values[DETInputFormat.width],
+        'bbox_height': values[DETInputFormat.height],
         'score': 0,
-        'object_category': 1,
+        'object_category': target_id[1],
         'object_subcategory': 1,
         'truncation': 0,
         'occlusion': 0
@@ -419,64 +461,6 @@ function handleImageBoxMCMOT(fileInput, path, objects) {
     })
 }
 
-// Draw text 
-function drawText(text, y, x, color = 'green') {
-     ctx.fillStyle = color;
-     ctx.font = 'normal 900 14px Arial';
-     ctx.fillText(text, y, x);
-}
-
-// Function to draw a dot at a specific position
-function drawBoundingBox(ctx, centerX, centerY, width, height, color) {
-    const topLeftX = centerX - width / 2;
-    const topLeftY = centerY - height / 2;
-
-    // Draw the bounding box
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(topLeftX, topLeftY, width, height);
-}
-
-// Function to handle image upload
-function handleImageUpload(fileInput, path, objects) {
-    return new Promise((resolve, reject) => {
-        try {
-            fs.readFile(fileInput, (err, data) => {
-                // if (err) resolve(err);
-        
-                loadImage(data).then((img) => {
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    // Draw bounding box and text
-                    objects.forEach(object => {
-                        object = object.split(',')
-                        const xcenter = (object[3]*1 + object[5]*1) /2;
-                        const ycenter = (object[4]*1 + object[6]*1) /2;
-                        const width = (object[5]*1 - object[3]*1);
-                        const height = (object[6]*1 - object[4]*1);
-    
-                        drawText(`1`, xcenter - width/2 + 2, ycenter - height/2 - 5);
-                        drawBoundingBox(ctx, xcenter, ycenter, width, height, 'green'); 
-                    });
-        
-                    // Save the canvas as an image file
-                    const out = fs.createWriteStream(path);
-                    const stream = canvas.createPNGStream();
-                    stream.pipe(out);
-                    // out.on('finish', () => console.log(path));
-                    resolve()
-                }).catch((err) => {
-                    console.error('Error loading image:', err);
-                    reject()
-                });
-            });
-        } catch (error) {
-            reject()
-        }
-    })
-}
-
 // Function to convert video to frames
 function convertToFrames(inputVideo, outputFramesDir, fps) {
     return new Promise((resolve, reject) => {
@@ -557,34 +541,19 @@ async function convert(params) {
                     if(DETMOTFolder.length > 0) {
                         DETMOTFolder.forEach(unplanned => {
                             const dirDETMOTUnplanned = `${inputDir}/${date}/DETMOT/${unplanned}`;
-                            createDirectory(path.join(date, PATH_STRING.train,  PATH_STRING.det_mot, unplanned))
+                            createDirectory(path.join(date, PATH_STRING.train, PATH_STRING.det_mot, unplanned))
                             // Read all files in the directory
                             const filesDETDrones = fs.readdirSync(dirDETMOTUnplanned);
         
                             if(filesDETDrones.length > 0) {
                                 filesDETDrones.forEach(drone => {
                                     const droneDir = path.join(dirDETMOTUnplanned, drone);
-                                    createDirectory(path.join(date, PATH_STRING.train,  PATH_STRING.det_mot, unplanned, drone))
+                                    createDirectory(path.join(date, PATH_STRING.train, PATH_STRING.det_mot, unplanned, drone))
                                     // Read all files in the Unplanned directory
                                     const filesDETClips = fs.readdirSync(droneDir);
                                     if(filesDETClips.length > 0) {
                                         filesDETClips.forEach(clip => {
-                                            indexOfFrame = 1;
-                                            const clipDir = path.join(droneDir, clip);
-                                            const detFolderFiles = fs.readdirSync(path.join(clipDir, 'TXT'))
-                                            // Filter out only .txt files
-                                            const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
-                                            // Process each .txt file
-                                            detFiles.forEach(file => {
-                                                convertTxtToDet(date, drone, clip, file, unplanned === 'Unplanned');
-                                            });
-                        
-                                            const motFolderFiles = fs.readdirSync(path.join(clipDir, 'MOT'))
-                                            //const motFiles = motFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt');
-                                            // Process each .txt file
-                                            motFolderFiles.forEach(file => {
-                                                convertTxtToMOT(date, drone, clip, file, unplanned === 'Unplanned');
-                                            });
+                                            convertInputToDETMOT(date, drone, clip, droneDir, unplanned === 'Unplanned')
                                         })
                                     }
                                 });
