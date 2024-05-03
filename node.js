@@ -7,7 +7,7 @@ const { DETInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_form
 const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
 const { getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT } = require('./util');
 const { PATH_STRING } = require('./contanst');
-const { handleImageMoving, handleImageDET, handleImageMOT } = require('./images');
+const { drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT } = require('./images');
 
 
 // Define input and output filenames

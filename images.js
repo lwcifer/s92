@@ -126,4 +126,4 @@ function handleImageMOT(fileInput, pathMOT, objects) {
         });
     })
 }
-module.exports = {handleImageMoving, handleImageDET, handleImageMOT}
+module.exports = {drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT}
