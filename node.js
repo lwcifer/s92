@@ -6,79 +6,25 @@ const path = require('path');
 const { DETInputFormat, MOTInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
 const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
 const { handleImageMoving } = require('./images');
-
-
+const { getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT } = require('./util');
+const { PATH_STRING } = require('./contanst');
 // Define input and output filenames
-
 let inputDir = 'C:/Users/PC/Downloads/input';
 let outDir = 'C:/Users/PC/Documents/s92';
 let mod = 'all';
 let fps = 30;
 const digitFileName = 5;
 
-const COLORS = [
-    'green', 'blue', 'red', 'yellow', 'purple', 'orange', 'gray', '#33A6FF', 'pink', 'lightblue', 'black'
-]
-
-const PATH_STRING = {
-    test: 'Test',
-    train: 'Train',
-    val: 'Val',
-    det_mot: 'DETMOT',
-    mcmot: 'MCMOT',
-    det: 'Annotation Det',
-    det_visualized: 'Annotation Det Visualized',
-    mot: 'Annotation MOT',
-    mot_visualized: 'Annotation MOT Visualized',
-    images: 'Images',
-    meta: 'Meta',
-    mcmot_target_box: 'Annotation MCMOT TargetBox',
-    mcmot_target_main: 'Annotation MCMOT TargetMain',
-    mcmot_target_pos: 'Annotation MCMOT TargetPos',
-    mcmot_visualized: 'Annotation MCMOT Visualized'
-}
-
 // Create a canvas and context
 const canvas = createCanvas(500, 500);
 const ctx = canvas.getContext('2d');
 
-
-// Function to create directory recursively
-function createDirectory(dirPath) {
-    // Split the path into individual directories
-    const dirs = dirPath.split(path.sep);
-    // Initialize current path as the root directory
-    let currentPath = '';
-    // Iterate through each directory in the path
-    for (const dir of dirs) {
-        // Append the current directory to the current path
-        currentPath = path.join(currentPath, dir);
-        // Check if the current directory exists
-        if (!fs.existsSync(outDir+'/'+currentPath)) {
-            // If not, create it
-            fs.mkdirSync(outDir+'/'+currentPath);
-        }
-    }
+function createDirectory(x) {
+    uCreateDirectory.call(this, x, outDir);
 }
 
-function createBaseForder(outDir) {
-    return new Promise((resolve, reject) => {
-        try {
-            // Check if the current directory exists
-            if (!fs.existsSync(outDir)) {
-                // If not, create it
-                fs.mkdirSync(outDir);
-            }
-            if (!fs.existsSync(path.join(outDir, PATH_STRING.test))) {
-                fs.mkdirSync(path.join(outDir, PATH_STRING.test));
-                fs.mkdirSync(path.join(outDir, PATH_STRING.train))
-                fs.mkdirSync(path.join(outDir, PATH_STRING.val));
-            }
-            resolve()
-        } catch (err) {
-            reject(err)
-        }
-    })
+function frameIndexToTime(x,y) {
+    return uFrameIndexToTime.call(this, x, y, fps);
 }
 
 function processDETLine(line) {
@@ -100,18 +46,6 @@ function processDETLine(line) {
     }
     // Join the values back with comma ','
     return DETOutputFormat.map(item => newValues[item]);
-}
-
-// Function to calculate the time difference between two timestamps
-function timeDifference(t1, t2) {
-    return Math.abs(new Date(t1) - new Date(t2));
-}
-
-function frameIndexToTime(startTime, index) {
-    const timestamp = (index / fps) * 1000
-    const date = new Date(startTime)
-    const timestampFromDateString = date.getTime() + timestamp
-    return timestampFromDateString
 }
 
 let indexOfFrame = 1;
@@ -231,63 +165,6 @@ function convertTxtToMOT (date, droneName, clipName, file, unplanned = true) {
     fs.writeFileSync(path.join(outDir+outputFilePath, `${date}_${droneName}_${clipName}.txt`), newContent);
 }
 
-// convert csv to MCMOT
-function exportXmlToFile(xmlContent, filename) {
-    let dir = filename.split(path.posix.sep)
-    dir.pop()
-    dir = dir.toString().replaceAll(',', '/')
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-
-    fs.writeFile(filename, xmlContent, (err) => {
-        if (err) {
-            console.error('Error writing XML file:', err);
-        } else {
-            console.log('XML file saved successfully:', filename);
-        }
-    });
-}
-
-function sortPromax(arr, start, ppkList) {
-    let res = [];
-    let ppk = [];
-    let min;
-    let minItem;
-    let ppkItem;
-    for (let i = 0; i < arr.length; i++) {
-        const item = arr[i];
-        const pp = ppkList[i];
-        const num = new Date(item.split(',')[0]).getTime();
-        if (num >= start) {
-            res.push(item);
-            ppk.push(pp);
-            for (let j = res.length - 1; j > 0; j--) {
-                const g1 = new Date(res[j].split(',')[0]).getTime();
-                const g0 = new Date(res[j - 1].split(',')[0]).getTime();
-                if (g1 < g0) {
-                    [res[j], res[j - 1]] = [res[j - 1], res[j]];
-                    [ppk[j], ppk[j - 1]] = [ppk[j - 1], ppk[j]];
-                } else {
-                    break;
-                }
-            }
-        } else {
-            if (!min || start - num < min) {
-                min = start - num
-                minItem = item
-                ppkItem = pp
-            }
-        }
-    }
-    if (min < new Date(res[0].split(',')[0]).getTime() - start) {
-        res = [minItem, ...res]
-        ppk = [ppkItem, ...ppk]
-    }
-
-    return {ppk, res}
-}
-
 function contentMCMOT(date, clip, segments) {
     let resultTargetMain = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
     let resultTargetBox = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
@@ -305,11 +182,8 @@ function contentMCMOT(date, clip, segments) {
             // Read the file content synchronously
             const fileKlvURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_klv.csv`;
             const filePpkURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_ppk.csv`;
-            const mcmotFileUrl = `${inputDir}/${date}/MCMOT/${clip}/${drone}/MOT/`;
-            const mcmotFiles = fs.readdirSync(mcmotFileUrl);
             const fileKvlContent = fs.readFileSync(fileKlvURL, 'utf8');
             const filePpkContent = fs.readFileSync(filePpkURL, 'utf8');
-            const mcmotContent = fs.readFileSync(`${inputDir}/${date}/MCMOT/${clip}/${drone}/MOT/${mcmotFiles}`, 'utf8');
 
             // Split the file content by new line character '\n'
             let lines = fileKvlContent.trim().split('\n');
@@ -318,32 +192,13 @@ function contentMCMOT(date, clip, segments) {
             ppk.shift();
 
             const rootTime = lines[0].split(",")[0]
-            let startTime = frameIndexToTime(rootTime, segments[0].split(',')[0])
+            let startTime = frameIndexToTime(rootTime, parseInt(segments[0].split(',')[0]))
             const res = sortPromax(lines, startTime, ppk)
             lines = res.res;
             ppk = res.ppk;
 
-            function extraData(item, dr) {
-                switch (dr) {
-                    case '2':
-                        item += `,-11,2,0.7,184.6`;
-                        break;
-                    case '3':
-                        item += `,5,0.4,2,178`;
-                        break;
-                    case '4':
-                        item += `,-11,-2,0.6,182`;
-                        break;
-                    case '5':
-                        item += `,-11,-0.6,-3,181`;
-                        break;
-                }
-
-                return item
-            }
-        
             let indexA = 0;
-            const iklv0 = extraData(lines[0], drone)
+            const iklv0 = extraDataMCMOT(lines[0], drone)
             xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], drone})
             for (let i = 1; i < segments.length; i++) {
                 if (indexA < lines.length) {
@@ -363,7 +218,7 @@ function contentMCMOT(date, clip, segments) {
                                 xx = indexA - 1
                             }
                         }
-                        const iklv = extraData(lines[xx], drone)
+                        const iklv = extraDataMCMOT(lines[xx], drone)
                         xxx.push({segment: segments[i], klv: iklv, ppk: ppk[xx], drone});
                     }
                 }
@@ -465,15 +320,6 @@ function contentMCMOT(date, clip, segments) {
     return [resultTargetBox, resultTargetMain, resultTargetPos];
 }
 
-
-function valueToText(val) {
-    if (!val) {
-        return 'Null'
-    }
-
-    return val.trim().replace(/\0+$/, '')
-}
-
 function convertTxtToMCMOT(date, clip) {
     let fileData = []
     const clipFolderFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip));
@@ -496,6 +342,7 @@ function convertTxtToMCMOT(date, clip) {
         const droneImgFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip, drone, 'images'));
         if(droneImgFiles.length > 0) {
             for (let i=0; i < droneImgFiles.length; i += 3) {
+            // for (let i=0; i < 3; i++) {
                 const img = droneImgFiles[i]
 
                 const imgURL = path.join(inputDir, date, 'MCMOT', clip, drone, 'images', img);
@@ -530,16 +377,6 @@ function convertTxtToMCMOT(date, clip) {
     })
 }
 
-function getRandomColor() {
-    var letters = '0123456789ABCDEF';
-    var color = '#';
-    for (var i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
-  
-
 // Function to handle image upload
 function handleImageBoxMCMOT(fileInput, path, objects) {
     return new Promise((resolve, reject) => {
@@ -554,14 +391,13 @@ function handleImageBoxMCMOT(fileInput, path, objects) {
                     // Draw bounding box and text
                     objects.forEach(object => {
                         object = object.split(',')
-                        const xcenter = object[3]*1 + object[5]/2;
+                        const xcenter = +[3]*1 + object[5]/2;
                         const ycenter = object[4]*1 + object[6]/2;
                         const width = object[5];
                         const height = object[6];
                         const nem = object[1] + object[2]
                         const boxid = object[2]
-                        const color = COLORS[parseInt(boxid)]
-                        // const color = getRandomColor()
+                        const color = getFixedColor(nem)
                         drawText(nem, xcenter - width/2 + 2, ycenter - height/2 - 5);
                         drawBoundingBox(ctx, xcenter, ycenter, width, height, color);
                     });
@@ -603,9 +439,6 @@ function drawBoundingBox(ctx, centerX, centerY, width, height, color) {
 
 // Function to handle image upload
 function handleImageUpload(fileInput, path, objects) {
-    // console.log('',fileInput)
-    // console.log('',path)
-    // console.log('',objects)
     return new Promise((resolve, reject) => {
         try {
             fs.readFile(fileInput, (err, data) => {
@@ -639,38 +472,8 @@ function handleImageUpload(fileInput, path, objects) {
                 });
             });
         } catch (error) {
-            
+            reject()
         }
-        // fs.readFile(fileInput, (err, data) => {
-        //     if (err) throw err;
-    
-        //     loadImage(data).then((img) => {
-        //         canvas.width = img.width;
-        //         canvas.height = img.height;
-        //         ctx.drawImage(img, 0, 0);
-        //         // Draw bounding box and text
-        //         objects.forEach(object => {
-        //             object = object.split(',')
-        //             const xcenter = (object[3]*1 + object[5]*1) /2;
-        //             const ycenter = (object[4]*1 + object[6]*1) /2;
-        //             const width = (object[5]*1 - object[3]*1);
-        //             const height = (object[6]*1 - object[4]*1);
-
-        //             drawText(`1`, xcenter - width/2 + 2, ycenter - height/2 - 5);
-        //             drawBoundingBox(ctx, xcenter, ycenter, width, height, 'green'); 
-        //         });
-    
-        //         // Save the canvas as an image file
-        //         const out = fs.createWriteStream(path);
-        //         const stream = canvas.createPNGStream();
-        //         stream.pipe(out);
-        //         // out.on('finish', () => console.log('The image was saved.'));
-        //         resolve()
-        //     }).catch((err) => {
-        //         console.error('Error loading image:', err);
-        //         reject()
-        //     });
-        // });
     })
 }
 
