@@ -16,13 +16,13 @@
             <label for="inputFolderPath">Input folder</label>
             <input type="text" id="inputFolderPath" name="inputpath" placeholder="Enter input folder path...">
         </div>
-            <div class="item">
+        <div class="item">
             <label for="outputFolderPath">Output folder</label>
             <input type="text" id="outputFolderPath" name="outputpath" placeholder="Enter output folder path...">
         </div>
         <div class="item">
             <label for="fps">FPS</label>
-            <input type="number" id="fps" value="50" name="fps" placeholder="Enter video output FPS...">
+            <input type="number" id="fps" value="30" name="fps" placeholder="Enter video output FPS...">
         </div>
         <div class="item">
             <label for="fps">Mode</label>
@@ -32,6 +32,14 @@
                 <option value="2">MCMOT</option>
                 <option value="3">Images & Video</option>
             </select>
+        </div>
+        <div class="item">
+            <label for="inputFolderPath">KLV time difference (second)</label>
+            <input type="number" value="0" id="klvTimeDifference" name="klvtimedifference" placeholder="Enter KLV time difference">
+        </div>
+        <div class="item">
+            <label for="inputFolderPath">PPK time difference (second)</label>
+            <input type="number" value="0" id="ppkTimeDifference" name="ppktimedifference" placeholder="Enter PPK time difference">
         </div>
         <button id="convertButton">Convert</button>
     </div>

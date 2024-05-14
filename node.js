@@ -5,9 +5,9 @@ const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const { DETInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
 const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
-const { getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT } = require('./util');
+const { addDifferenceTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT } = require('./util');
 const { PATH_STRING } = require('./contanst');
-const { drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT } = require('./images');
+const { drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT} = require('./images');
 
 
 // Define input and output filenames
@@ -15,6 +15,8 @@ let inputDir = 'C:/Users/PC/Downloads/input';
 let outDir = 'C:/Users/PC/Documents/s92';
 let mod = 'all';
 let fps = 30;
+let ppkTimeDifference = 0;
+let klvTimeDifference = 0;
 const digitFileName = 5;
 
 // Create a canvas and context
@@ -61,22 +63,22 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     // Read the file content synchronously
     const fileContent = fs.readFileSync(fileURL, 'utf8');
     // Split the file content by new line character '\n'
-    const lines = fileContent.trim().split('\n');
+    const klvData = fileContent.trim().split('\n');
 
     //get Content metadata klv
     const klvFileUrl = path.join(inputClipDir, 'metadata_klv.csv');
     const fileKLVContent = fs.readFileSync(klvFileUrl, 'utf8');
-    const linesKLV = fileKLVContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
+    const klvDataKLV = fileKLVContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
 
     //get content metadata ppk
     const ppkFileUrl = path.join(inputClipDir, 'metadata_ppk.csv')
     const filePPKContent = fs.readFileSync(ppkFileUrl, 'utf8');
-    const linesPPK = filePPKContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
+    const klvDataPPK = filePPKContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
 
-    const timeOfFile = frameIndexToTime(linesKLV[1][0], fileName*1);
+    const timeOfFile = frameIndexToTime(klvDataKLV[1][0], fileName*1);
     let minDifference = Infinity;
-    for (let i = indexOfFrame; i < linesKLV.length; i++) {
-        let difference = linesKLV[i] && timeDifference(linesKLV[i][0], timeOfFile);
+    for (let i = indexOfFrame; i < klvDataKLV.length; i++) {
+        let difference = klvDataKLV[i] && timeDifference(klvDataKLV[i][0], timeOfFile);
         if (difference < minDifference) {
             minDifference = difference;
             indexOfFrame = i;
@@ -84,14 +86,14 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     }
     
     const contentMetadataKLV = metadataOutputFormat.map(item => {
-        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+        return KLVInputFormat.indexOf(item) >= 0 ? klvDataKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
 
     const contentMetadataPPK = metadataOutputFormat.map(item => {
         if(['sensorLatitude','sensorLongitude','sensorTrueAltitude'].includes(item)) {
-            return PPKInputFormat.indexOf(item) >= 0 ? linesPPK[indexOfFrame][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
+            return PPKInputFormat.indexOf(item) >= 0 ? klvDataPPK[indexOfFrame][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
         }
-        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+        return KLVInputFormat.indexOf(item) >= 0 ? klvDataKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
 
     const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, droneName, clipName);
@@ -106,7 +108,7 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     fs.writeFileSync(path.join(outDir, outputMetaDir, filePpk), contentMetadataPPK.toString());
 
     // Process each line and join them with '\n' to form the new content
-    const newContent = lines.map(line => processDETLine(line)).join('\n');
+    const newContent = klvData.map(line => processDETLine(line)).join('\n');
     const outputDETPath = path.join(outputDir, PATH_STRING.det);
     if (!fs.existsSync(outDir+outputDETPath)) {
         createDirectory(outputDETPath)
@@ -126,8 +128,8 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     if (!fs.existsSync(outDir + outputMOTVisualizedPath)) {
         createDirectory(outputMOTVisualizedPath)
     }
-    handleImageDET(imgURL, pathOutImg, pathOutMOTVisualized, lines)
-    handleImageMOT(imgURL, pathOutMOTVisualized, lines)
+    handleImageDET(imgURL, pathOutImg, pathOutMOTVisualized, klvData)
+    handleImageMOT(imgURL, pathOutMOTVisualized, klvData)
 
     if (!fs.existsSync(path.join(outDir, outputDir, PATH_STRING.images))) {
         createDirectory(path.join(outputDir, PATH_STRING.images))
@@ -135,7 +137,7 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     handleImageMoving(imgURL, path.join(outDir, outputDir, PATH_STRING.images, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`))
 
     //return MOT content file
-    const newContentMOT = lines.map(line => processMOTLine(line, fileName)).join('\n');
+    const newContentMOT = klvData.map(line => processMOTLine(line, fileName)).join('\n');
     return newContentMOT;
 }
 
@@ -196,10 +198,10 @@ function convertTxtToMOT (date, droneName, clipName, file, unplanned = true) {
     const fileContent = fs.readFileSync(fileURL, 'utf8');
 
     // Split the file content by new line character '\n'
-    const lines = fileContent.trim().split('\n');
+    const klvData = fileContent.trim().split('\n');
     
     // Process each line and join them with '\n' to form the new content
-    const newContent = lines.map(line => processMOTLine(line)).join('\n');
+    const newContent = klvData.map(line => processMOTLine(line)).join('\n');
     const outputFilePath = `/${date}/${PATH_STRING.train}/${PATH_STRING.det_mot}/${plannedText}/${droneName}/${clipName}/${PATH_STRING.mot}`;
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
@@ -224,44 +226,47 @@ function contentMCMOT(date, clip, segments) {
             // Read the file content synchronously
             const fileKlvURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_klv.csv`;
             const filePpkURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_ppk.csv`;
-            const fileKvlContent = fs.readFileSync(fileKlvURL, 'utf8');
+            const fileSpeedURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_speed.csv`;
+            const fileKlvContent = fs.readFileSync(fileKlvURL, 'utf8');
             const filePpkContent = fs.readFileSync(filePpkURL, 'utf8');
 
             // Split the file content by new line character '\n'
-            let lines = fileKvlContent.trim().split('\n');
+            let klvData = fileKlvContent.trim().split('\n');
             let ppk = filePpkContent.trim().split('\n');
-            lines.shift();
+            let sppedData = fileSpeedURL.trim().split('\n');
+            sppedData.shift();
+            klvData.shift();
             ppk.shift();
 
-            const rootTime = lines[0].split(",")[0]
+            const rootTime = addDifferenceTime(klvData[0].split(",")[0], klvTimeDifference)
             let startTime = frameIndexToTime(rootTime, parseInt(segments[0].split(',')[0]))
-            const res = sortPromax(lines, startTime, ppk)
-            lines = res.res;
+            const res = sortPromax(klvData, startTime, ppk, klvTimeDifference, ppkTimeDifference)
+            klvData = res.res;
             ppk = res.ppk;
 
             let indexA = 0;
-            const iklv0 = extraDataMCMOT(lines[0], drone)
-            xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], drone})
+            const iklv0 = extraDataMCMOT(klvData[0], drone)
+            xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], spped: sppedData[0], drone})
             for (let i = 1; i < segments.length; i++) {
-                if (indexA < lines.length) {
+                if (indexA < klvData.length) {
                     const iii = segments[i].split(',')[0];
                     const iiiTime = frameIndexToTime(rootTime, iii);
-                    let klvTime = (new Date(lines[indexA].split(',')[0])).getTime();
+                    let klvTime = addDifferenceTime(klvData[indexA].split(',')[0], klvTimeDifference);
                     let xx = indexA
                     if (iii === segments[i - 1].split(',')[0]) {
                         xxx.push({...xxx[xxx.length - 1], segment: segments[i]});
                     } else {
-                        while (indexA < lines.length && klvTime <= iiiTime) {
+                        while (indexA < klvData.length && klvTime <= iiiTime) {
                             indexA++;
                             xx = indexA;
-                            klvTime = (new Date(lines[indexA].split(',')[0])).getTime();
-                            const nextKlvTime = (new Date(lines[indexA - 1].split(',')[0])).getTime();
+                            klvTime = addDifferenceTime(klvData[indexA].split(',')[0], klvTimeDifference);
+                            const nextKlvTime = addDifferenceTime(klvData[indexA - 1].split(',')[0], klvTimeDifference);
                             if (Math.abs(nextKlvTime - iiiTime) < Math.abs(iiiTime - klvTime)) {
                                 xx = indexA - 1
                             }
                         }
-                        const iklv = extraDataMCMOT(lines[xx], drone)
-                        xxx.push({segment: segments[i], klv: iklv, ppk: ppk[xx], drone});
+                        const iklv = extraDataMCMOT(klvData[xx], drone)
+                        xxx.push({segment: segments[i], klv: iklv, ppk: ppk[xx], spped: sppedData[xx], drone});
                     }
                 }
             }
@@ -523,6 +528,8 @@ async function convert(params) {
         outDir = params.output;
         mod = params.mode;
         fps =params.fps;
+        klvTimeDifference =params.klvtimedifference;
+        ppkTimeDifference =params.klvtimedifference;
 
         // Check if the current directory exists
         if (!fs.existsSync(outDir)) {

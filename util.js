@@ -98,8 +98,16 @@ function exportXmlToFile(xmlContent, filename) {
     });
 }
 
+function addDifferenceTime(root, difference) {
+    let res = new Date(root)
+
+    res.setSeconds(res.getSeconds() + difference)
+
+    return res.getTime()
+}
+
 /**/
-function sortPromax(arr, start, ppkList) {
+function sortPromax(arr, start, ppkList, klvTimeDifference, ppkTimeDifference) {
     let res = [];
     let ppk = [];
     let min;
@@ -108,13 +116,13 @@ function sortPromax(arr, start, ppkList) {
     for (let i = 0; i < arr.length; i++) {
         const item = arr[i];
         const pp = ppkList[i];
-        const num = new Date(item.split(',')[0]).getTime();
+        const num = addDifferenceTime(item.split(',')[0], klvTimeDifference);
         if (num >= start) {
             res.push(item);
             ppk.push(pp);
             for (let j = res.length - 1; j > 0; j--) {
-                const g1 = new Date(res[j].split(',')[0]).getTime();
-                const g0 = new Date(res[j - 1].split(',')[0]).getTime();
+                const g1 = addDifferenceTime(res[j].split(',')[0], klvTimeDifference);
+                const g0 = addDifferenceTime(res[j - 1].split(',')[0], klvTimeDifference);
                 if (g1 < g0) {
                     [res[j], res[j - 1]] = [res[j - 1], res[j]];
                     [ppk[j], ppk[j - 1]] = [ppk[j - 1], ppk[j]];
@@ -141,20 +149,20 @@ function sortPromax(arr, start, ppkList) {
 function extraDataMCMOT(item, dr) {
     switch (dr) {
         case '2':
-            item += `,-11,2,0.7,184.6`;
+            item += `,-0.5,0.3,1.7,182.4`;
             break;
         case '3':
-            item += `,5,0.4,2,178`;
+            item += `,0,-1,0,178`;
             break;
         case '4':
-            item += `,-11,-2,0.6,182`;
+            item += `,2,-2.6,0.5,180`;
             break;
         case '5':
-            item += `,-11,-0.6,-3,181`;
+            item += `,0,-1.5,3,180`;
             break;
     }
 
     return item
 }
 
-module.exports = { getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT }
+module.exports = { getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }

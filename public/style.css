@@ -61,7 +61,7 @@ button:hover {
     color: #222;
 }
 .form {
-    width: 400px;
+    width: 600px;
     margin: 0 auto;
     max-width: 100%;
     text-align: center;
@@ -81,7 +81,7 @@ button:hover {
     margin-right: auto;
 }
 label {
-    width: 100px;
+    width: 220px;
     text-align: left;
 }
 label +* {
