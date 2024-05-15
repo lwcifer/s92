@@ -271,46 +271,57 @@ function contentMCMOT(date, clip, segments) {
             const fileKlvURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_klv.csv`;
             const filePpkURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_ppk.csv`;
             const fileSpeedURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_speed.csv`;
-            const fileKlvContent = fs.readFileSync(fileKlvURL, 'utf8');
+            const fileKvlContent = fs.readFileSync(fileKlvURL, 'utf8');
             const filePpkContent = fs.readFileSync(filePpkURL, 'utf8');
 
             // Split the file content by new line character '\n'
-            let klvData = fileKlvContent.trim().split('\n');
+            let lines = fileKvlContent.trim().split('\n');
+            let speedData = fileSpeedURL.trim().split('\n');
             let ppk = filePpkContent.trim().split('\n');
-            let sppedData = fileSpeedURL.trim().split('\n');
-            sppedData.shift();
-            klvData.shift();
+            lines.shift();
             ppk.shift();
 
-            const rootTime = addDifferenceTime(klvData[0].split(",")[0], klvTimeDifference)
-            let startTime = frameIndexToTime(rootTime, parseInt(segments[0].split(',')[0]))
-            const res = sortPromax(klvData, startTime, ppk, klvTimeDifference, ppkTimeDifference)
-            klvData = res.res;
-            ppk = res.ppk;
+            const rootTime = addDifferenceTime(lines[0].split(",")[0], klvTimeDifference);
+            let startTime = frameIndexToTime(rootTime, parseInt(segments[0].split(',')[0]));
+            lines = sortPromax(lines, startTime, klvTimeDifference);
+            ppk = sortPromax(ppk, startTime, ppkTimeDifference);
+            speedData = sortPromax(speedData, startTime, 0);
 
             let indexA = 0;
-            const iklv0 = extraDataMCMOT(klvData[0], drone)
-            xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], spped: sppedData[0], drone})
+            const iklv0 = extraDataMCMOT(lines[0], drone);
+            xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], speed: speedData[0], drone});
+
             for (let i = 1; i < segments.length; i++) {
-                if (indexA < klvData.length) {
+                if (indexA < lines.length) {
                     const iii = segments[i].split(',')[0];
                     const iiiTime = frameIndexToTime(rootTime, iii);
-                    let klvTime = addDifferenceTime(klvData[indexA].split(',')[0], klvTimeDifference);
-                    let xx = indexA
+                    let klvTime = addDifferenceTime(lines[indexA].split(',')[0], klvTimeDifference);
+                    let ppkTime = addDifferenceTime(ppk[indexA].split(',')[0], ppkTimeDifference);
+                    let speedTime = addDifferenceTime(speedData[indexA].split(',')[0], 0);
+
+                    let xx = indexA;
                     if (iii === segments[i - 1].split(',')[0]) {
                         xxx.push({...xxx[xxx.length - 1], segment: segments[i]});
                     } else {
-                        while (indexA < klvData.length && klvTime <= iiiTime) {
+                        while (indexA < lines.length && (klvTime <= iiiTime || ppkTime <= iiiTime || speedTime <= iiiTime)) {
                             indexA++;
                             xx = indexA;
-                            klvTime = addDifferenceTime(klvData[indexA].split(',')[0], klvTimeDifference);
-                            const nextKlvTime = addDifferenceTime(klvData[indexA - 1].split(',')[0], klvTimeDifference);
-                            if (Math.abs(nextKlvTime - iiiTime) < Math.abs(iiiTime - klvTime)) {
-                                xx = indexA - 1
+                            klvTime = addDifferenceTime(lines[indexA].split(',')[0], klvTimeDifference);
+                            ppkTime = addDifferenceTime(ppk[indexA].split(',')[0], ppkTimeDifference);
+                            speedTime = addDifferenceTime(speedData[indexA].split(',')[0], 0);
+                            
+                            const prevKlvTime = addDifferenceTime(lines[indexA - 1].split(',')[0], klvTimeDifference);
+                            const prevPpkTime = addDifferenceTime(ppk[indexA - 1].split(',')[0], ppkTimeDifference);
+                            const prevSpeedTime = addDifferenceTime(speedData[indexA - 1].split(',')[0], 0);
+                            
+                            if (Math.abs(prevKlvTime - iiiTime) < Math.abs(iiiTime - klvTime) ||
+                                Math.abs(prevPpkTime - iiiTime) < Math.abs(iiiTime - ppkTime) ||
+                                Math.abs(prevSpeedTime - iiiTime) < Math.abs(iiiTime - speedTime)) {
+                                xx = indexA - 1;
                             }
                         }
-                        const iklv = extraDataMCMOT(klvData[xx], drone)
-                        xxx.push({segment: segments[i], klv: iklv, ppk: ppk[xx], spped: sppedData[xx], drone});
+                        const iklv = extraDataMCMOT(lines[xx], drone);
+                        xxx.push({segment: segments[i], klv: iklv, ppk: ppk[xx], speed: speedData[xx], drone});
                     }
                 }
             }

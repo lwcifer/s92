@@ -140,25 +140,20 @@ function addDifferenceTime(root, difference) {
 
 
 /**/
-function sortPromax(arr, start, ppkList, klvTimeDifference, ppkTimeDifference) {
+function sortPromax(arr, start, timeDiff) {
     let res = [];
-    let ppk = [];
     let min;
     let minItem;
-    let ppkItem;
     for (let i = 0; i < arr.length; i++) {
         const item = arr[i];
-        const pp = ppkList[i];
-        const num = addDifferenceTime(item.split(',')[0], klvTimeDifference);
+        const num = addDifferenceTime(item.split(',')[0], timeDiff);
         if (num >= start) {
             res.push(item);
-            ppk.push(pp);
             for (let j = res.length - 1; j > 0; j--) {
-                const g1 = addDifferenceTime(res[j].split(',')[0], klvTimeDifference);
-                const g0 = addDifferenceTime(res[j - 1].split(',')[0], klvTimeDifference);
+                const g1 = addDifferenceTime(res[j].split(',')[0], timeDiff);
+                const g0 = addDifferenceTime(res[j - 1].split(',')[0], timeDiff);
                 if (g1 < g0) {
                     [res[j], res[j - 1]] = [res[j - 1], res[j]];
-                    [ppk[j], ppk[j - 1]] = [ppk[j - 1], ppk[j]];
                 } else {
                     break;
                 }
@@ -167,16 +162,14 @@ function sortPromax(arr, start, ppkList, klvTimeDifference, ppkTimeDifference) {
             if (!min || start - num < min) {
                 min = start - num
                 minItem = item
-                ppkItem = pp
             }
         }
     }
     if (min < new Date(res[0].split(',')[0]).getTime() - start) {
         res = [minItem, ...res]
-        ppk = [ppkItem, ...ppk]
     }
 
-    return { ppk, res }
+    return res
 }
 
 function extraDataMCMOT(item, dr) {

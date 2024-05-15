@@ -5,7 +5,7 @@ const canvas = createCanvas(500, 500);
 const ctx = canvas.getContext('2d');
 const { exec } = require('child_process');
 const { getFixedColor } = require('./util');
-const {colors} = require('./contanst');
+const {colors, categories} = require('./contanst');
 
 function handleImageMoving(fileInput, outPath) {
     
@@ -104,7 +104,7 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
             const width = object[4]*1;
             const height = object[5]*1;
             drawText(ctx,  object[1], xcenter - width/2 + 2, ycenter - height/2 - 5);
-            drawBoundingBox(ctx, xcenter, ycenter, width, height, colors[object[0]+object[1]]); 
+            drawBoundingBox(ctx, xcenter, ycenter, width, height, colors[object[1]]); 
           });
 
           // Save the canvas as an image file
