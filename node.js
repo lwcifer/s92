@@ -82,32 +82,35 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     const linesLog = fileLogContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
 
     const timeOfFile = frameIndexToTime(addDifferenceTime(linesKLV[1][0], klvTimeDifference), fileName*1);
-    let minDifference = Infinity;
+    let minDifferenceKLV = Infinity;
+    let minDifferencePPK = Infinity;
+    let minDifferenceLog = Infinity;
     for (let i = indexOfKLV; i < linesKLV.length; i++) {
-        const klvTime = linesLog[i] && addDifferenceTime(linesKLV[i][0], klvTimeDifference);
+        const klvTime = linesKLV[i] && addDifferenceTime(linesKLV[i][0], klvTimeDifference);
         console.log('klvTime', klvTime)
         let difference = linesLog[i] && timeDifference(klvTime, timeOfFile);
-        if (difference < minDifference) {
-            minDifference = difference;
+        if (difference < minDifferenceKLV) {
+          minDifferenceKLV = difference;
             indexOfKLV = i;
         }
     }
     for (let i = indexOfPPK; i < linesPPK.length; i++) {
       const ppkTime = linesPPK[i] && addDifferenceTime(linesPPK[i][0], ppkTimeDifference);
       let difference = linesPPK[i] && timeDifference(ppkTime, timeOfFile);
-      if (difference < minDifference) {
-          minDifference = difference;
+      if (difference < minDifferencePPK) {
+        minDifferencePPK = difference;
           indexOfPPK = i;
       }
     }
     for (let i = indexOfLog; i < linesLog.length; i++) {
-      let difference = linesLog[i] && timeDifference(linesLog[i][0], timeOfFile);
-      if (difference < minDifference) {
-          minDifference = difference;
+      const logTime = linesPPK[i] && addDifferenceTime(linesLog[i][0], 0);
+      let difference = linesLog[i] && timeDifference(logTime, timeOfFile);
+      if (difference < minDifferenceLog) {
+          minDifferenceLog = difference;
           indexOfLog = i;
       }
     }
-    
+    console.log('indexOfKLV', indexOfKLV, 'indexOfPPK', indexOfPPK, 'indexOfLog', indexOfLog)
     const contentMetadataKLV = metadataOutputFormat.map(item => {
         if(item === 'precisionTimeStamp') {
           console.log('linesKLV[indexOfKLV]', linesKLV[indexOfKLV][0], addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference))
@@ -129,7 +132,7 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
         if(item === 'plaftformSpeed') {
           return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0';
         }
-        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfFrame][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+        return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfKLV][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
 
     const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, droneName, clipName);
@@ -172,7 +175,9 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
 }
 
 async function convertInputToDETMOT(date, drone, clip, droneDir, unplanned) {
-    indexOfFrame = 1;
+    indexOfKLV = 1;
+    indexOfPPK = 1;
+    indexOfLog = 1;
     const plannedText = unplanned ? 'Unplanned' : 'Planned';
     const motContentFile = [];
     const motImgs = [];
@@ -205,7 +210,7 @@ async function convertInputToDETMOT(date, drone, clip, droneDir, unplanned) {
     await handleImageMOT(motImgs, pathOutMOTVisualized, motContentFile, `${date}_${drone}_${clip}`);
 
     const newContent = motContentFile.join('\n');
-
+    console.log('newContent', newContent)
     fs.writeFileSync(path.join(outDir, outputFilePath, `${date}_${drone}_${clip}.txt`), newContent);
 
 }
@@ -225,7 +230,7 @@ function processMOTLine(line, fileName) {
         'bbox_width': values[DETInputFormat.width],
         'bbox_height': values[DETInputFormat.height],
         'score': 0,
-        'object_category': target_id[1],
+        'object_category': target_id,
         'object_subcategory': 1,
         'truncation': 0,
         'occlusion': 0
