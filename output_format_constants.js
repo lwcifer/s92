@@ -54,7 +54,7 @@ const metadataOutputFormat = [
     'offsetCornerLongitudePoint4',
     'plaftformSpeed',
     'sensorExposureTime',
-	'platformcamRotationMatrix'
+	  'platformcamRotationMatrix'
 ]
 
 module.exports = {

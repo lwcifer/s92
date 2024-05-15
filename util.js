@@ -97,14 +97,47 @@ function exportXmlToFile(xmlContent, filename) {
         }
     });
 }
+function setTimeToDate(date, timeString) {
+  // Split the time string into its components
+  const [hours, minutes, seconds, milliseconds] = timeString.split(/[.:]/).map(Number);
+
+  // Set the time on the date object
+  date.setHours(hours);
+  date.setMinutes(minutes);
+  date.setSeconds(seconds);
+  date.setMilliseconds(milliseconds);
+
+  return date;
+}
+function formatDate(date) {
+  // Extract date components
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+
+  // Format the date string
+  const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+
+  return formattedDate;
+}
 
 function addDifferenceTime(root, difference) {
-    let res = new Date(root)
+  let rootDate = new Date(root.split(' ')[0]);
 
-    res.setSeconds(res.getSeconds() + difference)
+  // Create a new Date object from the root to avoid modifying the original date
+  let res = setTimeToDate(rootDate, root.split(' ')[1]);
+  console.log('rootDate', res, root.split(' ')[1])
 
-    return res.getTime()
+  // Add the difference in seconds to the new Date object
+  res.setSeconds(res.getSeconds() + difference);
+  // Return the timestamp of the new date
+  return formatDate(new Date(res));
 }
+
 
 /**/
 function sortPromax(arr, start, ppkList, klvTimeDifference, ppkTimeDifference) {
