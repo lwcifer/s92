@@ -87,8 +87,7 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     let minDifferenceLog = Infinity;
     for (let i = indexOfKLV; i < linesKLV.length; i++) {
         const klvTime = linesKLV[i] && addDifferenceTime(linesKLV[i][0], klvTimeDifference);
-        console.log('klvTime', klvTime)
-        let difference = linesLog[i] && timeDifference(klvTime, timeOfFile);
+        let difference = linesKLV[i] && timeDifference(klvTime, timeOfFile);
         if (difference < minDifferenceKLV) {
           minDifferenceKLV = difference;
             indexOfKLV = i;
@@ -99,11 +98,11 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
       let difference = linesPPK[i] && timeDifference(ppkTime, timeOfFile);
       if (difference < minDifferencePPK) {
         minDifferencePPK = difference;
-          indexOfPPK = i;
+        indexOfPPK = i;
       }
     }
     for (let i = indexOfLog; i < linesLog.length; i++) {
-      const logTime = linesPPK[i] && addDifferenceTime(linesLog[i][0], 0);
+      const logTime = linesLog[i] && addDifferenceTime(linesLog[i][0], 0);
       let difference = linesLog[i] && timeDifference(logTime, timeOfFile);
       if (difference < minDifferenceLog) {
           minDifferenceLog = difference;
@@ -620,23 +619,6 @@ function convertXML2JSON(xmlfile) {
     })
 }
 
-// Function to convert frames to video
-function convertToVideo(outputFramesDir, outputVideo, fps) {
-    return new Promise((resolve, reject) => {
-        // Delete existing file if it exists
-        if (fs.existsSync(outputVideo)) {
-            fs.unlinkSync(outputVideo);
-        }
-
-        exec(`ffmpeg -framerate ${fps} -i ${outputFramesDir}/%*.jpg -c:v libx264 -pix_fmt yuv420p ${outputVideo}`, (error, stdout, stderr) => {
-            if (error) {
-                reject(error);
-                return;
-            }
-            resolve();
-        });
-    });
-}
 
 
 // Main function
@@ -647,7 +629,7 @@ async function convert(params) {
         mod = params.mode;
         fps =params.fps;
         klvTimeDifference =params.klvtimedifference;
-        ppkTimeDifference =params.klvtimedifference;
+        ppkTimeDifference =params.ppktimedifference;
 
         // Check if the current directory exists
         if (!fs.existsSync(outDir)) {

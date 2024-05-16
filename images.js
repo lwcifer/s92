@@ -134,7 +134,9 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
   const outputVideo = path.join(outputDir, 'output.mp4');
   const fps = 10;
   await convertToVideo(inputFramesDir, outputVideo, fps);
-  console.log('Video conversion completed.');
+  console.log('Video conversion completed.', path.dirname(inputFramesDir));
+  await renameFolderSync(inputFramesDir, path.join(path.dirname(inputFramesDir), 'Annotation MOT Visualized'));
+  await deletePngFiles(path.join(path.dirname(inputFramesDir), 'Annotation MOT Visualized'));
 }
 
 // Function to convert frames to video using FFMPEG
@@ -149,6 +151,59 @@ function convertToVideo(inputDir, outputDir, fps) {
       console.log('Video created successfully:', outputDir);
       resolve();
     });
+  });
+}
+
+/**
+ * Deletes all .png files in the specified directory.
+ * @param {string} dirPath - The path to the directory.
+ */
+function deletePngFiles(dirPath) {
+  return new Promise((resolve, reject) => {
+    // Read the directory
+    fs.readdir(dirPath, (err, files) => {
+      if (err) {
+        reject(err);
+      }
+
+      // Loop through all the files
+      files.forEach((file) => {
+        // Check if the file ends with .png
+        if (path.extname(file).toLowerCase() === '.png') {
+          // Construct the full path of the file
+          const filePath = path.join(dirPath, file);
+
+          // Delete the file
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              console.error(`Error deleting file: ${filePath}`, err);
+              reject(err);
+            } else {
+              console.log(`Deleted file: ${filePath}`);
+              resolve();
+            }
+          });
+        }
+      });
+    });
+  });
+}
+
+/**
+ * Renames a folder synchronously.
+ * @param {string} oldPath - The current path of the folder.
+ * @param {string} newPath - The new path of the folder.
+ */
+function renameFolderSync(oldPath, newPath) {
+  return new Promise((resolve, reject) => {
+    try {
+      fs.renameSync(oldPath, newPath);
+      console.log(`Folder renamed from ${oldPath} to ${newPath}`);
+      resolve();
+    } catch (err) {
+      console.error(`Error renaming folder: ${err.message}`);
+      reject(err);
+    }
   });
 }
 
