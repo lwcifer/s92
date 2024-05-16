@@ -4,39 +4,31 @@ const { PATH_STRING } = require('./contanst');
 
 /***/
 function getFixedColor(inputString) {
-    // Tính toán hash từ chuỗi đầu vào
     let category = inputString.split('_')[0]
+    let id = inputString.split('_')[1]
+    let number = ''
     switch (category) {
         case 'car':
-            category = 0
+            number = '1' + id
             break;
         case 'bus':
-            category = 1
+            number = '2' + id
             break;
         case 'truck':
-            category = 2
+            number = '3' + id
             break;
         default:
-            category = 0
+            number = '1' + id
             break;
     }
 
-    let hash = 0;
-    for (let i = 1; i < inputString.length; i++) {
-        hash = inputString.charCodeAt(i) + ((hash << 6) - hash);
-    }
-
-    // Chọn một màu dựa trên hash, kết hợp với một số điều chỉnh
-    let color = "#";
-    for (let i = 0; i < 3; i++) {
-        const value = ((hash >> (i * 8)) + i * 133) % 256; // Sử dụng số điều chỉnh i * 133
-        color += ("00" + value.toString(16)).substr(-2);
-    }
-
-    console.log(inputString, color)
-    return color;
+    const randomValue = Math.abs(Math.sin(+number)) * 16777215;
+  
+    const hexColor = `#${Math.floor(randomValue).toString(16).padStart(6, '0')}`;
+  
+    return hexColor;
 }
-
+    
 /***/
 function valueToText(val) {
     if (!val) {
@@ -98,6 +90,7 @@ function uFrameIndexToTime(startTime, index, fps) {
 
 /***/
 function exportXmlToFile(xmlContent, filename) {
+    console.log();
     let dir = filename.split(path.posix.sep)
     dir.pop()
     dir = dir.toString().replaceAll(',', '/')
@@ -161,7 +154,7 @@ function isValidDate(date) {
 function addDifferenceTimeGetTime(root, difference) {
     let date = root.split(' ')[0]
     let rootDate = new Date(date);
-    if (isValidDate(rootDate)) {
+    if (!isValidDate(rootDate)) {
         date = date.split('-')[2] + '-' + date.split('-')[1] + '-' + date.split('-')[0]
         rootDate = new Date(date);
     }
@@ -174,7 +167,7 @@ function addDifferenceTimeGetTime(root, difference) {
     // Return the timestamp of the new date
 
     res = new Date(formatDate(new Date(res)))
-    console.log('Invalid Date:', root, difference, rootDate, res.getTime())
+    // console.log('addDifferenceTimeGetTime:', rootDate, difference, res)
     return res.getTime();
 }
 

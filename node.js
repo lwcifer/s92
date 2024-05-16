@@ -87,7 +87,7 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
     let minDifferenceLog = Infinity;
     for (let i = indexOfKLV; i < linesKLV.length; i++) {
         const klvTime = linesKLV[i] && addDifferenceTime(linesKLV[i][0], klvTimeDifference);
-        console.log('klvTime', klvTime)
+        // console.log('klvTime', klvTime)
         let difference = linesLog[i] && timeDifference(klvTime, timeOfFile);
         if (difference < minDifferenceKLV) {
           minDifferenceKLV = difference;
@@ -292,12 +292,7 @@ function contentMCMOT(date, clip, segments) {
 
 
             const rootTime = addDifferenceTimeGetTime(lines[0].split(",")[0], klvTimeDifference);
-            console.log('segments[0]', segments, segments[0])
             let startTime = frameIndexToTime(rootTime, parseInt(segments[0].split(',')[0]));
-            console.log(segments.length, clip, drone)
-            console.log('startTime', new Date(startTime))
-            console.log('rootTime', rootTime)
-
 
             lines = sortPromax(lines, startTime, klvTimeDifference);
             ppk = sortPromax(ppk, startTime, ppkTimeDifference, true);
@@ -391,10 +386,10 @@ function contentMCMOT(date, clip, segments) {
             }
         })
 
-        console.log('xxxSpeed', xxxSpeed)
-        console.log('xxxPPK', xxxPPK)
-        console.log('xxxKLV', xxxKLV)
-        console.log('segments.length', segments)
+        console.log('xxxSpeed', xxxSpeed.length)
+        console.log('xxxPPK', xxxPPK.length)
+        console.log('xxxKLV', xxxKLV.length)
+        console.log('segments.length', segments.length)
         const ck = {}
         for (let i = 0; i < segments.length; i++) {
             const values = segments[i].split(",");
@@ -418,7 +413,7 @@ function contentMCMOT(date, clip, segments) {
                 resultTargetMain += '\t\t<target_id_global>' + valueToText(values[1])+ '</target_id_global>\n';
                 resultTargetMain += '\t\t<object_category>' + category + '</object_category>\n';
                 resultTargetMain += '\t\t<object_subcategory>' + '1' + '</object_subcategory>\n';
-                resultTargetMain += '\t\t<box_id>' + valueToText(values[1]) + '</box_id>\n';
+                resultTargetMain += '\t\t<box_id>' + valueToText(values[2]) + '</box_id>\n';
                 resultTargetMain += '\t</object>\n';
                 ck[values[1] + values[2]] = 1
             }
@@ -438,7 +433,7 @@ function contentMCMOT(date, clip, segments) {
             const cy = +values[3] + values[5]/2
             resultTargetBox += '\t<object>\n';
             resultTargetBox += '\t\t<box_id>' + valueToText(values[2]) + '</box_id>\n';
-            resultTargetBox += '\t\t<avs_id>' + valueToText(drone) + '</avs_id>\n';
+            resultTargetBox += '\t\t<avs_id>avs' + valueToText(drone) + '</avs_id>\n';
             resultTargetBox += '\t\t<frame_index>' + valueToText(values[0]) + '</frame_index>\n';
             resultTargetBox += '\t\t<bbox_cx>' + cx + '</bbox_cx>\n';
             resultTargetBox += '\t\t<bbox_cy>' + cy + '</bbox_cy>\n';
@@ -448,11 +443,11 @@ function contentMCMOT(date, clip, segments) {
             // resultTargetBox += '\t\t<truncation>' + valueToText(values[7]) + '</truncation>\n';
             // resultTargetBox += '\t\t<occlusion>' + valueToText(values[8]) + '</occlusion>\n';
             resultTargetBox += '\t\t<precision_time_stamp>' + valueToText(klv[0]) + '</precision_time_stamp>\n';
-            resultTargetBox += '\t\t<platform_tail_number>' + valueToText(klv[-1]) + '</platform_tail_number>\n';
+            resultTargetBox += '\t\t<platform_tail_number>' + drone + '</platform_tail_number>\n';
             resultTargetBox += '\t\t<platform_heading_angle>' + valueToText(klv[1]) + '</platform_heading_angle>\n';
             resultTargetBox += '\t\t<platform_pitch_angle>' + valueToText(klv[2]) + '</platform_pitch_angle>\n';
             resultTargetBox += '\t\t<platform_roll_angle>' + valueToText(klv[3]) + '</platform_roll_angle>\n';
-            resultTargetBox += '\t\t<platform_designation>' + valueToText(klv[-1]) + '</platform_designation>\n';
+            resultTargetBox += '\t\t<platform_designation>' + drone + '</platform_designation>\n';
             resultTargetBox += '\t\t<image_source_sensor>' + valueToText(klv[4]) + '</image_source_sensor>\n';
             resultTargetBox += '\t\t<sensor_latitude>' + valueToText(ppk[1]) + '</sensor_latitude>\n';
             resultTargetBox += '\t\t<sensor_longitude>' + valueToText(ppk[2]) + '</sensor_longitude>\n';
@@ -513,7 +508,6 @@ function convertTxtToMCMOT(date, clip) {
         const droneImgFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip, drone, 'images'));
         if(droneImgFiles.length > 0) {
             for (let i=0; i < droneImgFiles.length; i++) {
-            // for (let i=0; i < 3; i++) {
                 const img = droneImgFiles[i]
 
                 const imgURL = path.join(inputDir, date, 'MCMOT', clip, drone, 'images', img);
@@ -534,11 +528,12 @@ function convertTxtToMCMOT(date, clip) {
                     fileData = [...fileData, ...objs]
                 }
                 // console.log('objs', fileData)
-                handleImageBoxMCMOT(imgURL, pathOutImg, objs)
+                // handleImageBoxMCMOT(imgURL, pathOutImg, objs)
                 
                 // handleImageMoving(imgURL, path.join(outDir, droneImgOutDir, `${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`))
             }
 
+            console.log('fileData:', fileData.length)
             const [contentTargetBox, contentTargetMain, contentTargetPos] = contentMCMOT(date, clip, fileData)
             
             exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}.xml`)
@@ -560,15 +555,15 @@ function handleImageBoxMCMOT(fileInput, path, objects) {
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
                     // Draw bounding box and text
-                    objects.forEach(object => {
+                    objects.forEach((object, index) => {
                         object = object.split(',')
                         const xcenter = +object[3]*1 + object[5]/2;
                         const ycenter = object[4]*1 + object[6]/2;
                         const width = object[5];
                         const height = object[6];
-                        const nem = 'car_01'
+                        const nem = object[1]
                         const boxid = object[2]
-                        const color = 'blue'
+                        const color = getFixedColor(nem)
                         drawText(ctx, nem, xcenter - width/2 + 2, ycenter - height/2 - 5);
                         drawBoundingBox(ctx, xcenter, ycenter, width, height, color);
                     });
