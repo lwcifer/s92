@@ -113,41 +113,52 @@ function exportXmlToFile(xmlContent, filename) {
         }
     });
 }
-
 function setTimeToDate(date, timeString) {
-    // Split the time string into its components
-    if (!timeString) console.log('setTimeToDatesetTimeToDate', date)
-    const [hours, minutes, seconds, milliseconds] = timeString.split(/[.:]/).map(Number);
-  
-    // Set the time on the date object
-    date.setHours(hours);
-    date.setMinutes(minutes);
-    date.setSeconds(seconds);
-    date.setMilliseconds(milliseconds);
-  
-    return date;
-  }
-  function formatDate(date) {
-    // Extract date components
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
-  
-    // Format the date string
-    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
-  
-    return formattedDate;
+  // Split the time string into its components
+  const [hours, minutes, seconds, milliseconds] = timeString.split(/[.:]/).map(Number);
+
+  // Set the time on the date object
+  date.setHours(hours);
+  date.setMinutes(minutes);
+  date.setSeconds(seconds);
+  date.setMilliseconds(milliseconds);
+
+  return date;
+}
+function formatDate(date) {
+  // Extract date components
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+
+  // Format the date string
+  const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+
+  return formattedDate;
+}
+
+function addDifferenceTime(root, difference) {
+  let rootDate = new Date(root.split(' ')[0]);
+
+  // Create a new Date object from the root to avoid modifying the original date
+  let res = setTimeToDate(rootDate, root.split(' ')[1]);
+  console.log('rootDate', res, root.split(' ')[1])
+
+  // Add the difference in seconds to the new Date object
+  res.setSeconds(res.getSeconds() + difference);
+  // Return the timestamp of the new date
+  return formatDate(new Date(res));
 }
 
 function isValidDate(date) {
     return date instanceof Date && !isNaN(date.getTime());
 }
 
-function addDifferenceTime(root, difference, check) {
+function addDifferenceTimeGetTime(root, difference) {
     let date = root.split(' ')[0]
     let rootDate = new Date(date);
     if (isValidDate(rootDate)) {
@@ -157,7 +168,7 @@ function addDifferenceTime(root, difference, check) {
 
     // Create a new Date object from the root to avoid modifying the original date
     let res = setTimeToDate(rootDate, root.split(' ')[1]);
-  
+    
     // Add the difference in seconds to the new Date object
     res.setSeconds(res.getSeconds() + difference);
     // Return the timestamp of the new date
@@ -176,14 +187,14 @@ function sortPromax(arr, start, timeDiff, check) {
     for (let i = 0; i < arr.length; i++) {
         const item = arr[i];
         if (item && item.split(',')[0]) {
-            const num = addDifferenceTime(item.split(',')[0], timeDiff, check);
+            const num = addDifferenceTimeGetTime(item.split(',')[0], timeDiff, check);
 
             if (num >= start) {
                 res.push(item);
                 // Sắp xếp các phần tử mới thêm vào `res`
                 for (let j = res.length - 1; j > 0; j--) {
-                    const g1 = addDifferenceTime(res[j].split(',')[0], timeDiff, check);
-                    const g0 = addDifferenceTime(res[j - 1].split(',')[0], timeDiff, check);
+                    const g1 = addDifferenceTimeGetTime(res[j].split(',')[0], timeDiff, check);
+                    const g0 = addDifferenceTimeGetTime(res[j - 1].split(',')[0], timeDiff, check);
                     if (g1 < g0) {
                         [res[j], res[j - 1]] = [res[j - 1], res[j]];
                     } else {
@@ -227,4 +238,4 @@ function extraDataMCMOT(item, dr) {
     return item
 }
 
-module.exports = { getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
+module.exports = { addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
