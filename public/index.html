@@ -14,11 +14,11 @@
     <div class="form">
         <div class="item">
             <label for="inputFolderPath">Input folder</label>
-            <input type="text" id="inputFolderPath" value="C:\DABEEO\newfolder\input240426" name="inputpath" placeholder="Enter input folder path...">
+            <input type="text" id="inputFolderPath" value="C:\DABEEO\newfolder\input240427" name="inputpath" placeholder="Enter input folder path...">
         </div>
         <div class="item">
             <label for="outputFolderPath">Output folder</label>
-            <input type="text" id="outputFolderPath" value="C:\DABEEO\newfolder\out240426" name="outputpath" placeholder="Enter output folder path...">
+            <input type="text" id="outputFolderPath" value="C:\DABEEO\newfolder\out240427" name="outputpath" placeholder="Enter output folder path...">
         </div>
         <div class="item">
             <label for="fps">FPS</label>
@@ -35,11 +35,11 @@
         </div>
         <div class="item">
             <label for="inputFolderPath">KLV time difference (second)</label>
-            <input type="number" value="0" id="klvTimeDifference" name="klvtimedifference" placeholder="Enter KLV time difference">
+            <input type="number" value="18" id="klvTimeDifference" name="klvtimedifference" placeholder="Enter KLV time difference">
         </div>
         <div class="item">
             <label for="inputFolderPath">PPK time difference (second)</label>
-            <input type="number" value="0" id="ppkTimeDifference" name="ppktimedifference" placeholder="Enter PPK time difference">
+            <input type="number" value="32400" id="ppkTimeDifference" name="ppktimedifference" placeholder="Enter PPK time difference">
         </div>
         <button id="convertButton">Convert</button>
     </div>
@@ -52,11 +52,12 @@
                 const output = document.getElementById('outputFolderPath').value.trim();
                 const fps = document.getElementById('fps').value.trim();
                 const mode = document.getElementById('mode').value.trim();
+                const ppktimedifference = document.getElementById('ppkTimeDifference').value.trim();
+                const klvtimedifference = document.getElementById('klvTimeDifference').value.trim();
 
                 if (!1) {
                     throw new Error('No folder selected');
                 }
-
 
                 // Example: Sending folder path to the server
                 const response = await fetch('/api/data', {
@@ -64,7 +65,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ input, output, fps, mode })
+                    body: JSON.stringify({ input, output, fps, mode, ppktimedifference, klvtimedifference })
                 });
 
                 if (!response.ok) {

@@ -5,6 +5,22 @@ const { PATH_STRING } = require('./contanst');
 /***/
 function getFixedColor(inputString) {
     // Tính toán hash từ chuỗi đầu vào
+    let category = inputString.split('_')[0]
+    switch (category) {
+        case 'car':
+            category = 0
+            break;
+        case 'bus':
+            category = 1
+            break;
+        case 'truck':
+            category = 2
+            break;
+        default:
+            category = 0
+            break;
+    }
+
     let hash = 0;
     for (let i = 1; i < inputString.length; i++) {
         hash = inputString.charCodeAt(i) + ((hash << 6) - hash);
@@ -98,45 +114,98 @@ function exportXmlToFile(xmlContent, filename) {
     });
 }
 
-function addDifferenceTime(root, difference) {
-    let res = new Date(root)
+function setTimeToDate(date, timeString) {
+    // Split the time string into its components
+    if (!timeString) console.log('setTimeToDatesetTimeToDate', date)
+    const [hours, minutes, seconds, milliseconds] = timeString.split(/[.:]/).map(Number);
+  
+    // Set the time on the date object
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    date.setSeconds(seconds);
+    date.setMilliseconds(milliseconds);
+  
+    return date;
+  }
+  function formatDate(date) {
+    // Extract date components
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  
+    // Format the date string
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+  
+    return formattedDate;
+}
 
-    res.setSeconds(res.getSeconds() + difference)
+function isValidDate(date) {
+    return date instanceof Date && !isNaN(date.getTime());
+}
 
-    return res.getTime()
+function addDifferenceTime(root, difference, check) {
+    let date = root.split(' ')[0]
+    let rootDate = new Date(date);
+    if (isValidDate(rootDate)) {
+        date = date.split('-')[2] + '-' + date.split('-')[1] + '-' + date.split('-')[0]
+        rootDate = new Date(date);
+    }
+
+    // Create a new Date object from the root to avoid modifying the original date
+    let res = setTimeToDate(rootDate, root.split(' ')[1]);
+  
+    // Add the difference in seconds to the new Date object
+    res.setSeconds(res.getSeconds() + difference);
+    // Return the timestamp of the new date
+
+    res = new Date(formatDate(new Date(res)))
+    console.log('Invalid Date:', root, difference, rootDate, res.getTime())
+    return res.getTime();
 }
 
 /**/
-function sortPromax(arr, start, timeDiff) {
+function sortPromax(arr, start, timeDiff, check) {
     let res = [];
     let min;
     let minItem;
+
     for (let i = 0; i < arr.length; i++) {
         const item = arr[i];
-        const num = addDifferenceTime(item.split(',')[0], timeDiff);
-        if (num >= start) {
-            res.push(item);
-            for (let j = res.length - 1; j > 0; j--) {
-                const g1 = addDifferenceTime(res[j].split(',')[0], timeDiff);
-                const g0 = addDifferenceTime(res[j - 1].split(',')[0], timeDiff);
-                if (g1 < g0) {
-                    [res[j], res[j - 1]] = [res[j - 1], res[j]];
-                } else {
-                    break;
+        if (item && item.split(',')[0]) {
+            const num = addDifferenceTime(item.split(',')[0], timeDiff, check);
+
+            if (num >= start) {
+                res.push(item);
+                // Sắp xếp các phần tử mới thêm vào `res`
+                for (let j = res.length - 1; j > 0; j--) {
+                    const g1 = addDifferenceTime(res[j].split(',')[0], timeDiff, check);
+                    const g0 = addDifferenceTime(res[j - 1].split(',')[0], timeDiff, check);
+                    if (g1 < g0) {
+                        [res[j], res[j - 1]] = [res[j - 1], res[j]];
+                    } else {
+                        break;
+                    }
                 }
-            }
-        } else {
-            if (!min || start - num < min) {
-                min = start - num
-                minItem = item
+            } else {
+                // Lưu lại phần tử gần với `start` nhất nhưng nhỏ hơn `start`
+                if (!min || start - num < min) {
+                    min = start - num;
+                    minItem = item;
+                }
             }
         }
     }
-    if (min < new Date(res[0].split(',')[0]).getTime() - start) {
-        res = [minItem, ...res]
+
+    // Đưa phần tử nhỏ hơn `start` nhưng gần với `start` nhất vào đầu `res`
+    if (minItem) {
+        res = [minItem, ...res];
     }
 
-    return res
+    return res;
 }
 
 function extraDataMCMOT(item, dr) {

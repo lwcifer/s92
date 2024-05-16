@@ -26,9 +26,11 @@ function handleImageMoving(fileInput, outPath) {
 
 // Draw text 
 function drawText(ctx, text, y, x, color = 'green') {
-    ctx.fillStyle = color;
-    ctx.font = 'normal 900 14px Arial';
-    ctx.fillText(text, y, x);
+    if (text && ctx) {
+        ctx.fillStyle = color;
+        ctx.font = 'normal 900 14px Arial';
+        ctx.fillText(text, y, x);
+    }
 }
 
 // Function to draw a dot at a specific position

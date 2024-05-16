@@ -14,9 +14,9 @@ const { drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImag
 let inputDir = 'C:/Users/PC/Downloads/input';
 let outDir = 'C:/Users/PC/Documents/s92';
 let mod = 'all';
-let fps = 30;
-let ppkTimeDifference = 0;
-let klvTimeDifference = 0;
+let fps = 10;
+let ppkTimeDifference = 32400;
+let klvTimeDifference = 18;
 const digitFileName = 5;
 
 // Create a canvas and context
@@ -216,7 +216,9 @@ function contentMCMOT(date, clip, segments) {
 
     const mcmotDronesDir = `${inputDir}/${date}/MCMOT/${clip}/`;
     const filesMCMOTDrones = fs.readdirSync(mcmotDronesDir);
-    let xxx = []
+    let xxxKLV = []
+    let xxxPPK = []
+    let xxxSpeed = []
     if(filesMCMOTDrones.length > 0) {
         filesMCMOTDrones.forEach(drone => {
             const filesInDrones = fs.readdirSync(path.join(mcmotDronesDir, drone));
@@ -229,67 +231,129 @@ function contentMCMOT(date, clip, segments) {
             const fileSpeedURL =  `${inputDir}/${date}/MCMOT/${clip}/${drone}/metadata_speed.csv`;
             const fileKvlContent = fs.readFileSync(fileKlvURL, 'utf8');
             const filePpkContent = fs.readFileSync(filePpkURL, 'utf8');
+            const fileSpeedContent = fs.readFileSync(fileSpeedURL, 'utf8');
 
             // Split the file content by new line character '\n'
             let lines = fileKvlContent.trim().split('\n');
-            let speedData = fileSpeedURL.trim().split('\n');
+            let speedData = fileSpeedContent.trim().split('\n');
             let ppk = filePpkContent.trim().split('\n');
             lines.shift();
+            speedData.shift();
             ppk.shift();
 
+
             const rootTime = addDifferenceTime(lines[0].split(",")[0], klvTimeDifference);
+            console.log('segments[0]', segments, segments[0])
             let startTime = frameIndexToTime(rootTime, parseInt(segments[0].split(',')[0]));
+            console.log(segments.length, clip, drone)
+            console.log('startTime', new Date(startTime))
+            console.log('rootTime', rootTime)
+
+
             lines = sortPromax(lines, startTime, klvTimeDifference);
-            ppk = sortPromax(ppk, startTime, ppkTimeDifference);
+            ppk = sortPromax(ppk, startTime, ppkTimeDifference, true);
             speedData = sortPromax(speedData, startTime, 0);
 
             let indexA = 0;
+            let indexB = 0;
+            let indexC = 0;
             const iklv0 = extraDataMCMOT(lines[0], drone);
-            xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], speed: speedData[0], drone});
-
+            // xxx.push({segment: segments[0], klv: iklv0, ppk: ppk[0], speed: speedData[0], drone});
+            xxxKLV.push({klv:iklv0, drone})
+            xxxPPK.push(ppk[0])
+            xxxSpeed.push(speedData[0])
+            
             for (let i = 1; i < segments.length; i++) {
-                if (indexA < lines.length) {
+                if (indexA < lines.length && lines[indexA].split(',')[0]) {
                     const iii = segments[i].split(',')[0];
                     const iiiTime = frameIndexToTime(rootTime, iii);
                     let klvTime = addDifferenceTime(lines[indexA].split(',')[0], klvTimeDifference);
-                    let ppkTime = addDifferenceTime(ppk[indexA].split(',')[0], ppkTimeDifference);
-                    let speedTime = addDifferenceTime(speedData[indexA].split(',')[0], 0);
 
                     let xx = indexA;
                     if (iii === segments[i - 1].split(',')[0]) {
-                        xxx.push({...xxx[xxx.length - 1], segment: segments[i]});
+                        xxxKLV.push(xxxKLV[xxxKLV.length - 1]);
                     } else {
-                        while (indexA < lines.length && (klvTime <= iiiTime || ppkTime <= iiiTime || speedTime <= iiiTime)) {
+                        while (indexA < lines.length && klvTime <= iiiTime) {
                             indexA++;
                             xx = indexA;
                             klvTime = addDifferenceTime(lines[indexA].split(',')[0], klvTimeDifference);
-                            ppkTime = addDifferenceTime(ppk[indexA].split(',')[0], ppkTimeDifference);
-                            speedTime = addDifferenceTime(speedData[indexA].split(',')[0], 0);
-                            
                             const prevKlvTime = addDifferenceTime(lines[indexA - 1].split(',')[0], klvTimeDifference);
-                            const prevPpkTime = addDifferenceTime(ppk[indexA - 1].split(',')[0], ppkTimeDifference);
-                            const prevSpeedTime = addDifferenceTime(speedData[indexA - 1].split(',')[0], 0);
                             
-                            if (Math.abs(prevKlvTime - iiiTime) < Math.abs(iiiTime - klvTime) ||
-                                Math.abs(prevPpkTime - iiiTime) < Math.abs(iiiTime - ppkTime) ||
-                                Math.abs(prevSpeedTime - iiiTime) < Math.abs(iiiTime - speedTime)) {
+                            if (Math.abs(prevKlvTime - iiiTime) < Math.abs(iiiTime - klvTime)) {
                                 xx = indexA - 1;
                             }
                         }
                         const iklv = extraDataMCMOT(lines[xx], drone);
-                        xxx.push({segment: segments[i], klv: iklv, ppk: ppk[xx], speed: speedData[xx], drone});
+                        xxxKLV.push({klv:iklv, drone});
                     }
                 }
             }
 
+            for (let i = 1; i < segments.length; i++) {
+                if (indexB < ppk.length) {
+                    const iii = segments[i].split(',')[0];
+                    const iiiTime = frameIndexToTime(rootTime, iii);
+                    let ppkTime = addDifferenceTime(ppk[indexB].split(',')[0], ppkTimeDifference, true);
+
+                    let xx = indexB;
+                    if (iii === segments[i - 1].split(',')[0]) {
+                        xxxPPK.push(xxxPPK[xxxPPK.length - 1]);
+                    } else {
+                        while (indexB < ppk.length && ppkTime <= iiiTime) {
+                            indexB++;
+                            xx = indexB;
+                            ppkTime = addDifferenceTime(ppk[indexB].split(',')[0], ppkTimeDifference, true);
+                            
+                            const prevPpkTime = addDifferenceTime(ppk[indexB - 1].split(',')[0], ppkTimeDifference, true);
+                            
+                            if (Math.abs(prevPpkTime - iiiTime) < Math.abs(iiiTime - ppkTime)) {
+                                xx = indexB - 1;
+                            }
+                        }
+                        xxxPPK.push(ppk[xx]);
+                    }
+                }
+            }
+
+            for (let i = 1; i < segments.length; i++) {
+                if (indexC < speedData.length) {
+                    const iii = segments[i].split(',')[0];
+                    const iiiTime = frameIndexToTime(rootTime, iii);
+                    let speedTime = addDifferenceTime(speedData[indexA].split(',')[0], 0);
+
+                    let xx = indexC;
+                    if (iii === segments[i - 1].split(',')[0]) {
+                        xxxSpeed.push(xxxSpeed[xxxSpeed.length - 1]);
+                    } else {
+                        while (indexC < speedData.length && speedTime <= iiiTime) {
+                            indexC++;
+                            xx = indexC;
+                            speedTime = addDifferenceTime(speedData[indexC].split(',')[0], 0);
+                            
+                            const prevSpeedTime = addDifferenceTime(speedData[indexC - 1].split(',')[0], 0);
+                            
+                            if (Math.abs(prevSpeedTime - iiiTime) < Math.abs(iiiTime - speedTime)) {
+                                xx = indexC - 1;
+                            }
+                        }
+                        xxxSpeed.push(speedData[xx]);
+                    }
+                }
+            }
         })
 
+        console.log('xxxSpeed', xxxSpeed)
+        console.log('xxxPPK', xxxPPK)
+        console.log('xxxKLV', xxxKLV)
+        console.log('segments.length', segments)
         const ck = {}
-        for (let i = 0; i < xxx.length; i++) {
-            const values = xxx[i].segment.split(",");
-            const ppk = xxx[i].ppk.split(",");
-            const klv = xxx[i].klv.split(",");
-            const drone = xxx[i].drone;
+        for (let i = 0; i < segments.length; i++) {
+            const values = segments[i].split(",");
+            const ppk = xxxPPK[i].split(",");
+            const speed = xxxSpeed[i].split(",");
+            // const ppk = xxxPPK[i].split(",");
+            const klv = xxxKLV[i].klv.split(",");
+            const drone = xxxKLV[i].drone;
             //add data to targetMain
             if (!ck[values[1] + values[2]] ) {
                 let category = '0'
@@ -302,7 +366,7 @@ function contentMCMOT(date, clip, segments) {
                     break;
                 }
                 resultTargetMain += '\t<object>\n';
-                resultTargetMain += '\t\t<target_id_global>' + valueToText(values[1]) + valueToText(values[2])+ '</target_id_global>\n';
+                resultTargetMain += '\t\t<target_id_global>' + valueToText(values[1])+ '</target_id_global>\n';
                 resultTargetMain += '\t\t<object_category>' + category + '</object_category>\n';
                 resultTargetMain += '\t\t<object_subcategory>' + '1' + '</object_subcategory>\n';
                 resultTargetMain += '\t\t<box_id>' + valueToText(values[1]) + '</box_id>\n';
@@ -312,12 +376,12 @@ function contentMCMOT(date, clip, segments) {
 
             //add data to targetPos
             resultTargetPos += '\t<object>\n';
-            resultTargetPos += '\t\t<target_id_global>' + valueToText(values[1]) + valueToText(values[2])+ '</target_id_global>\n';
+            resultTargetPos += '\t\t<target_id_global>' + valueToText(values[1]) + '</target_id_global>\n';
             resultTargetPos += '\t\t<avs_id>' + valueToText(drone) + '</avs_id>\n';
             resultTargetPos += '\t\t<frame_index>' + valueToText(values[0]) + '</frame_index>\n';
-            resultTargetPos += '\t\t<target_pos_lat>' + valueToText(ppk[5]) + '</target_pos_lat>\n';
-            resultTargetPos += '\t\t<target_pos_long>' + valueToText(ppk[6]) + '</target_pos_long>\n';
-            resultTargetPos += '\t\t<target_pos_alt>' + valueToText(ppk[7]) + '</target_pos_alt>\n';
+            resultTargetPos += '\t\t<target_pos_lat>' + valueToText(ppk[1]) + '</target_pos_lat>\n';
+            resultTargetPos += '\t\t<target_pos_long>' + valueToText(ppk[2]) + '</target_pos_long>\n';
+            resultTargetPos += '\t\t<target_pos_alt>' + valueToText(ppk[3]) + '</target_pos_alt>\n';
             resultTargetPos += '\t</object>\n';
 
             //add data to targetBox
@@ -341,9 +405,9 @@ function contentMCMOT(date, clip, segments) {
             resultTargetBox += '\t\t<platform_roll_angle>' + valueToText(klv[3]) + '</platform_roll_angle>\n';
             resultTargetBox += '\t\t<platform_designation>' + valueToText(klv[-1]) + '</platform_designation>\n';
             resultTargetBox += '\t\t<image_source_sensor>' + valueToText(klv[4]) + '</image_source_sensor>\n';
-            resultTargetBox += '\t\t<sensor_latitude>' + valueToText(ppk[5]) + '</sensor_latitude>\n';
-            resultTargetBox += '\t\t<sensor_longitude>' + valueToText(ppk[6]) + '</sensor_longitude>\n';
-            resultTargetBox += '\t\t<sensor_true_altitude>' + valueToText(ppk[7]) + '</sensor_true_altitude>\n';
+            resultTargetBox += '\t\t<sensor_latitude>' + valueToText(ppk[1]) + '</sensor_latitude>\n';
+            resultTargetBox += '\t\t<sensor_longitude>' + valueToText(ppk[2]) + '</sensor_longitude>\n';
+            resultTargetBox += '\t\t<sensor_true_altitude>' + valueToText(ppk[3]) + '</sensor_true_altitude>\n';
             resultTargetBox += '\t\t<sensor_horizontal_field_of_view>' + valueToText(klv[8]) + '</sensor_horizontal_field_of_view>\n';
             resultTargetBox += '\t\t<sensor_vertical_field_of_view>' + valueToText(klv[9]) + '</sensor_vertical_field_of_view>\n';
             resultTargetBox += '\t\t<sensor_relative_azimuth_angle>' + valueToText(klv[10]) + '</sensor_relative_azimuth_angle>\n';
@@ -361,7 +425,7 @@ function contentMCMOT(date, clip, segments) {
             resultTargetBox += '\t\t<offset_corner_longitude_point_3>' + valueToText(klv[22]) + '</offset_corner_longitude_point_3>\n';
             resultTargetBox += '\t\t<offset_corner_latitude_point_4>' + valueToText(klv[23]) + '</offset_corner_latitude_point_4>\n';
             resultTargetBox += '\t\t<offset_corner_longitude_point_4>' + valueToText(klv[24]) + '</offset_corner_longitude_point_4>\n';
-            resultTargetBox += '\t\t<plaftform_speed>' + '0' + '</plaftform_speed>\n';
+            resultTargetBox += '\t\t<plaftform_speed>' + valueToText(speed[5]) + '</plaftform_speed>\n';
             // resultTargetBox += '\t\t<sensor_exposure_time>' + valueToText(klv[-1]) + '</sensor_exposure_time>\n';
             // resultTargetBox += '\t\t<platform-cam_rotation_matrix>' + valueToText(klv[-1]) + '</platform-cam_rotation_matrix>\n';   
             resultTargetBox += '\t\t<ins_pitch_alignment_day>' + valueToText(klv[25]) + '</ins_pitch_alignment_day>\n';
@@ -399,15 +463,15 @@ function convertTxtToMCMOT(date, clip) {
 
         const droneImgFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', clip, drone, 'images'));
         if(droneImgFiles.length > 0) {
-            for (let i=0; i < droneImgFiles.length; i += 3) {
+            for (let i=0; i < droneImgFiles.length; i++) {
             // for (let i=0; i < 3; i++) {
                 const img = droneImgFiles[i]
 
                 const imgURL = path.join(inputDir, date, 'MCMOT', clip, drone, 'images', img);
                 const fileName = img.split('.')[0];
 
-                const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.mcmot, drone, clip);
-                const pathOutImg = path.join(outDir, droneImgOutDir, `${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`);
+                const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.mcmot, drone, '0007');
+                const pathOutImg = path.join(outDir, droneImgOutDir, `${date}_${'0007'}_${drone}_${fileName.slice(-digitFileName)}.jpg`);
 
                 if (!fs.existsSync(path.join(outDir, outputDir, PATH_STRING.images))) {
                     createDirectory(path.join(outputDir, PATH_STRING.images))
@@ -426,11 +490,11 @@ function convertTxtToMCMOT(date, clip) {
                 // handleImageMoving(imgURL, path.join(outDir, droneImgOutDir, `${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`))
             }
 
-            const [contentTargetBox, contentTargetMain, contentTargetPos] = contentMCMOT(date, clip, fileData)
+            // const [contentTargetBox, contentTargetMain, contentTargetPos] = contentMCMOT(date, clip, fileData)
             
-            exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}.xml`)
-            exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`)
-            exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}.xml`)
+            // exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}.xml`)
+            // exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`)
+            // exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${clip}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}.xml`)
         }
     })
 }
@@ -449,14 +513,14 @@ function handleImageBoxMCMOT(fileInput, path, objects) {
                     // Draw bounding box and text
                     objects.forEach(object => {
                         object = object.split(',')
-                        const xcenter = +[3]*1 + object[5]/2;
+                        const xcenter = +object[3]*1 + object[5]/2;
                         const ycenter = object[4]*1 + object[6]/2;
                         const width = object[5];
                         const height = object[6];
-                        const nem = object[1] + object[2]
+                        const nem = 'car_01'
                         const boxid = object[2]
-                        const color = getFixedColor(nem)
-                        drawText(nem, xcenter - width/2 + 2, ycenter - height/2 - 5);
+                        const color = 'blue'
+                        drawText(ctx, nem, xcenter - width/2 + 2, ycenter - height/2 - 5);
                         drawBoundingBox(ctx, xcenter, ycenter, width, height, color);
                     });
         
@@ -522,7 +586,7 @@ function convertToVideo(outputFramesDir, outputVideo, fps) {
             fs.unlinkSync(outputVideo);
         }
 
-        exec(`ffmpeg -framerate ${fps} -i ${outputFramesDir}/frame_%d.jpg -c:v libx264 -pix_fmt yuv420p ${outputVideo}`, (error, stdout, stderr) => {
+        exec(`ffmpeg -framerate ${fps} -i ${outputFramesDir}/%*.jpg -c:v libx264 -pix_fmt yuv420p ${outputVideo}`, (error, stdout, stderr) => {
             if (error) {
                 reject(error);
                 return;
@@ -592,7 +656,7 @@ async function convert(params) {
 
         // await convertToFrames(inputVideo, outputFramesDir, fps);
         // await convertXML2JSON('label.xml');
-        // await convertToVideo('frames2', outputVideo, fps)
+        // await convertToVideo('./Anno', './video/xxx.mp4', 10)
         console.log('Conversion complete.');
     } catch (error) {
         console.error('Error during conversion:', error);
