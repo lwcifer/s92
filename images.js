@@ -100,7 +100,6 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           // Draw bounding box and text
           objects[index].split('\n').forEach(object => {
             object = object.split(',')
-            console.log('object', object)
             const xcenter = object[2]*1;
             const ycenter = object[3]*1;
             const width = object[4]*1;
@@ -110,7 +109,7 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           });
 
           // Save the canvas as an image file
-          const outPath = path.join(outputDir, `${file}_${fileName}.png`);
+          const outPath = path.join(outputDir, `${index+1}.png`);
           const out = fs.createWriteStream(outPath);
           const stream = canvas.createPNGStream();
           stream.pipe(out);
@@ -135,25 +134,77 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
   const outputVideo = path.join(outputDir, 'output.mp4');
   const fps = 10;
   await convertToVideo(inputFramesDir, outputVideo, fps);
-  console.log('Video conversion completed.');
+  console.log('Video conversion completed.', path.dirname(inputFramesDir));
+  await renameFolderSync(inputFramesDir, path.join(path.dirname(inputFramesDir), 'Annotation MOT Visualized'));
+  await deletePngFiles(path.join(path.dirname(inputFramesDir), 'Annotation MOT Visualized'));
 }
 
-// Function to convert frames to video
-function convertToVideo(inputFramesDir, outputVideo, fps) {
-    return new Promise((resolve, reject) => {
-      // Delete existing file if it exists
-      if (fs.existsSync(outputVideo)) {
-        fs.unlinkSync(outputVideo);
+// Function to convert frames to video using FFMPEG
+function convertToVideo(inputDir, outputDir, fps) {
+  return new Promise((resolve, reject) => {
+    const command = `ffmpeg -framerate ${fps} -i "${inputDir}/%01d.png" -c:v libx264 -pix_fmt yuv420p ${outputDir}`;
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error during conversion:', error);
+        reject();
+      }
+      console.log('Video created successfully:', outputDir);
+      resolve();
+    });
+  });
+}
+
+/**
+ * Deletes all .png files in the specified directory.
+ * @param {string} dirPath - The path to the directory.
+ */
+function deletePngFiles(dirPath) {
+  return new Promise((resolve, reject) => {
+    // Read the directory
+    fs.readdir(dirPath, (err, files) => {
+      if (err) {
+        reject(err);
       }
 
-      exec(`ffmpeg -framerate ${fps} -i  ${inputFramesDir} -c:v libx264 -pix_fmt yuv420p ${outputVideo}`, (error) => {
-        if (error) {
-          reject(error);
-          return;
+      // Loop through all the files
+      files.forEach((file) => {
+        // Check if the file ends with .png
+        if (path.extname(file).toLowerCase() === '.png') {
+          // Construct the full path of the file
+          const filePath = path.join(dirPath, file);
+
+          // Delete the file
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              console.error(`Error deleting file: ${filePath}`, err);
+              reject(err);
+            } else {
+              console.log(`Deleted file: ${filePath}`);
+              resolve();
+            }
+          });
         }
-        resolve();
       });
     });
+  });
+}
+
+/**
+ * Renames a folder synchronously.
+ * @param {string} oldPath - The current path of the folder.
+ * @param {string} newPath - The new path of the folder.
+ */
+function renameFolderSync(oldPath, newPath) {
+  return new Promise((resolve, reject) => {
+    try {
+      fs.renameSync(oldPath, newPath);
+      console.log(`Folder renamed from ${oldPath} to ${newPath}`);
+      resolve();
+    } catch (err) {
+      console.error(`Error renaming folder: ${err.message}`);
+      reject(err);
+    }
+  });
 }
 
 module.exports = {drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT}

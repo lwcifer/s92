@@ -18,8 +18,8 @@ const PATH_STRING = {
 
 const categories = {
   'car': '0',
-  'truck': '1',
-  'bus': '2',
+  'bus': '1',
+  'truck': '2',
 }
 
 const colors = {

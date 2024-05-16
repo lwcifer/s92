@@ -139,10 +139,10 @@ function addDifferenceTime(root, difference) {
 
   // Create a new Date object from the root to avoid modifying the original date
   let res = setTimeToDate(rootDate, root.split(' ')[1]);
-  console.log('rootDate', res, root.split(' ')[1])
+  //console.log('rootDate', res, root.split(' ')[1])
 
   // Add the difference in seconds to the new Date object
-  res.setSeconds(res.getSeconds() + difference);
+  res.setSeconds(res.getSeconds() + difference*1);
   // Return the timestamp of the new date
   return formatDate(new Date(res));
 }
