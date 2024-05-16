@@ -100,7 +100,6 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           // Draw bounding box and text
           objects[index].split('\n').forEach(object => {
             object = object.split(',')
-            console.log('object', object)
             const xcenter = object[2]*1;
             const ycenter = object[3]*1;
             const width = object[4]*1;
@@ -110,7 +109,7 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           });
 
           // Save the canvas as an image file
-          const outPath = path.join(outputDir, `${file}_${fileName}.png`);
+          const outPath = path.join(outputDir, `${index+1}.png`);
           const out = fs.createWriteStream(outPath);
           const stream = canvas.createPNGStream();
           stream.pipe(out);
@@ -138,22 +137,19 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
   console.log('Video conversion completed.');
 }
 
-// Function to convert frames to video
-function convertToVideo(inputFramesDir, outputVideo, fps) {
-    return new Promise((resolve, reject) => {
-      // Delete existing file if it exists
-      if (fs.existsSync(outputVideo)) {
-        fs.unlinkSync(outputVideo);
+// Function to convert frames to video using FFMPEG
+function convertToVideo(inputDir, outputDir, fps) {
+  return new Promise((resolve, reject) => {
+    const command = `ffmpeg -framerate ${fps} -i "${inputDir}/%01d.png" -c:v libx264 -pix_fmt yuv420p ${outputDir}`;
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error during conversion:', error);
+        reject();
       }
-
-      exec(`ffmpeg -framerate ${fps} -i  ${inputFramesDir} -c:v libx264 -pix_fmt yuv420p ${outputVideo}`, (error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve();
-      });
+      console.log('Video created successfully:', outputDir);
+      resolve();
     });
+  });
 }
 
 module.exports = {drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT}

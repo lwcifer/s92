@@ -116,8 +116,11 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
           console.log('linesKLV[indexOfKLV]', linesKLV[indexOfKLV][0], addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference))
           return linesKLV[indexOfKLV][0] && addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference) || '0';
         }
-        if(item === 'plaftformSpeed') {
-          return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0';
+        if(item === 'platformTailNumber' || item === 'platformDesignation') {
+          return '2';
+        }
+        if(item === 'platformSpeed') {
+          return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0' 
         }
         return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfKLV][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
@@ -129,8 +132,11 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
         if(['sensorLatitude','sensorLongitude','sensorTrueAltitude'].includes(item)) {
             return PPKInputFormat.indexOf(item) >= 0 ? linesPPK[indexOfPPK][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
         }
-        if(item === 'plaftformSpeed') {
-          return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0';
+        if(item === 'platformTailNumber' || item === 'platformDesignation') {
+          return '2';
+        }
+        if(item === 'platformSpeed') {
+          return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0' 
         }
         return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfKLV][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
@@ -143,8 +149,8 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
 
     const fileKlv = `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.txt`;
     const filePpk = `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}(PPK).txt`;
-    fs.writeFileSync(path.join(outDir, outputMetaDir, fileKlv), contentMetadataKLV.toString());
-    fs.writeFileSync(path.join(outDir, outputMetaDir, filePpk), contentMetadataPPK.toString());
+    fs.writeFileSync(path.join(outDir, outputMetaDir, fileKlv), (contentMetadataKLV.toString() + ',-0.500000,0.300000,1.700000,182.40000').replace( /[\r\n]+/gm, "" ));
+    fs.writeFileSync(path.join(outDir, outputMetaDir, filePpk), (contentMetadataPPK.toString() + ',-0.500000,0.300000,1.700000,182.40000').replace( /[\r\n]+/gm, "" ));
 
     // Process each line and join them with '\n' to form the new content
     const newContent = lines.map(line => processDETLine(line)).join('\n');
@@ -206,13 +212,13 @@ async function convertInputToDETMOT(date, drone, clip, droneDir, unplanned) {
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
     }
-    console.log('motContentFile', motContentFile)
+
     await handleImageMOT(motImgs, pathOutMOTVisualized, motContentFile, `${date}_${drone}_${clip}`);
 
     const newContent = motContentFile.join('\n');
-    console.log('newContent', newContent)
-    fs.writeFileSync(path.join(outDir, outputFilePath, `${date}_${drone}_${clip}.txt`), newContent);
 
+    fs.writeFileSync(path.join(outDir, outputFilePath, `${date}_${drone}_${clip}.txt`), newContent);
+    console.log('All MOT files were saved.');
 }
 
 function processMOTLine(line, fileName) {
@@ -221,7 +227,7 @@ function processMOTLine(line, fileName) {
     const cx = 1*values[DETInputFormat.minx] + values[DETInputFormat.width]/2;
     const cy = 1*values[DETInputFormat.miny] + values[DETInputFormat.height]/2;
     const target_id = categories[values[DETInputFormat.name]];
-    console.log('line', line)
+
     const newValues = {
         'frame_index': fileName.slice(-digitFileName),
         'target_id': values[DETInputFormat.name]+ values[DETInputFormat.id],
@@ -640,9 +646,8 @@ async function convert(params) {
         outDir = params.output;
         mod = params.mode;
         fps =params.fps;
-        console.log('params11111111111111111111111111', params)
-        // klvTimeDifference =params.klvtimedifference;
-        // ppkTimeDifference =params.klvtimedifference;
+        klvTimeDifference =params.klvtimedifference;
+        ppkTimeDifference =params.klvtimedifference;
 
         // Check if the current directory exists
         if (!fs.existsSync(outDir)) {
