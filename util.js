@@ -23,12 +23,12 @@ function getFixedColor(inputString) {
     }
 
     const randomValue = Math.abs(Math.sin(+number)) * 16777215;
-  
+
     const hexColor = `#${Math.floor(randomValue).toString(16).padStart(6, '0')}`;
-  
+
     return hexColor;
 }
-    
+
 /***/
 function valueToText(val) {
     if (!val) {
@@ -107,44 +107,44 @@ function exportXmlToFile(xmlContent, filename) {
     });
 }
 function setTimeToDate(date, timeString) {
-  // Split the time string into its components
-  const [hours, minutes, seconds, milliseconds] = timeString.split(/[.:]/).map(Number);
+    // Split the time string into its components
+    const [hours, minutes, seconds, milliseconds] = timeString.split(/[.:]/).map(Number);
 
-  // Set the time on the date object
-  date.setHours(hours);
-  date.setMinutes(minutes);
-  date.setSeconds(seconds);
-  date.setMilliseconds(milliseconds);
+    // Set the time on the date object
+    date.setHours(hours);
+    date.setMinutes(minutes);
+    date.setSeconds(seconds);
+    date.setMilliseconds(milliseconds);
 
-  return date;
+    return date;
 }
 function formatDate(date) {
-  // Extract date components
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+    // Extract date components
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
 
-  // Format the date string
-  const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+    // Format the date string
+    const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
 
-  return formattedDate;
+    return formattedDate;
 }
 
 function addDifferenceTime(root, difference) {
-  let rootDate = new Date(root.split(' ')[0]);
+    let rootDate = new Date(root.split(' ')[0]);
 
-  // Create a new Date object from the root to avoid modifying the original date
-  let res = setTimeToDate(rootDate, root.split(' ')[1]);
-  //console.log('rootDate', res, root.split(' ')[1])
+    // Create a new Date object from the root to avoid modifying the original date
+    let res = setTimeToDate(rootDate, root.split(' ')[1]);
+    //console.log('rootDate', res, root.split(' ')[1])
 
-  // Add the difference in seconds to the new Date object
-  res.setSeconds(res.getSeconds() + difference*1);
-  // Return the timestamp of the new date
-  return formatDate(new Date(res));
+    // Add the difference in seconds to the new Date object
+    res.setSeconds(res.getSeconds() + difference * 1);
+    // Return the timestamp of the new date
+    return formatDate(new Date(res));
 }
 
 function isValidDate(date) {
@@ -161,7 +161,7 @@ function addDifferenceTimeGetTime(root, difference) {
 
     // Create a new Date object from the root to avoid modifying the original date
     let res = setTimeToDate(rootDate, root.split(' ')[1]);
-    
+
     // Add the difference in seconds to the new Date object
     res.setSeconds(res.getSeconds() + difference);
     // Return the timestamp of the new date
@@ -172,6 +172,72 @@ function addDifferenceTimeGetTime(root, difference) {
 }
 
 /**/
+
+function mergeArrays(array1, klv, ppk, speed, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference) {
+    // Duyệt qua từng phần tử trong array1
+    return array1.map(item1 => {
+        let closestItemKLV = null;
+        let closestItemPPK = null;
+        let closestItemSpeed = null;
+        let minTimeDifferenceKLV = Infinity;
+        let minTimeDifferencePPK = Infinity;
+        let minTimeDifferenceSpeed = Infinity;
+        let timeklv = '';
+        let timeppk = '';
+        let timespeed = '';
+        const g1 = uFrameIndexToTime(rootTime, parseInt(item1.split(',')[0]), fps);
+
+        // Tìm phần tử có thời gian gần đúng nhất trong klv
+        klv.forEach(item2 => {
+            if (item2 && item2.trim().length > 0) {
+                timeklv = addDifferenceTimeGetTime(item2.split(',')[0], klvTimeDifference);
+                const timeDifference = Math.abs(g1 - timeklv);
+                if (timeDifference < minTimeDifferenceKLV) {
+                    minTimeDifferenceKLV = timeDifference;
+                    closestItemKLV = item2;
+                }
+            }
+        });
+
+        // Tìm phần tử có thời gian gần đúng nhất trong ppk
+        ppk.forEach(item2 => {
+            if (item2 && item2.trim().length > 0) {
+                timeppk = addDifferenceTimeGetTime(item2.split(',')[0], ppkTimeDifference);
+                const timeDifference = Math.abs(g1 - timeppk);
+                if (timeDifference < minTimeDifferencePPK) {
+                    minTimeDifferencePPK = timeDifference;
+                    closestItemPPK = item2;
+                }
+            }
+        });
+
+        // Tìm phần tử có thời gian gần đúng nhất trong speed
+        speed.forEach(item2 => {
+            if (item2 && item2.trim().length > 0) {
+                timespeed = addDifferenceTimeGetTime(item2.split(',')[0], speedTimeDifference);
+                const timeDifference = Math.abs(g1 - timespeed);
+                if (timeDifference < minTimeDifferenceSpeed) {
+                    minTimeDifferenceSpeed = timeDifference;
+                    closestItemSpeed = item2;
+                }
+            }
+        });
+
+        // Hợp nhất giá trị từ phần tử gần đúng nhất của klv, ppk, và speed vào array1
+        return {
+            drone,
+            time: new Date(g1),
+            timeklv: new Date(timeklv),
+            timeppk: new Date(timeppk),
+            timespeed: new Date(timespeed),
+            segment: item1,
+            klv: closestItemKLV || '',
+            ppk: closestItemPPK || '',
+            speed: closestItemSpeed || ''
+        };
+    });
+}
+
 function sortPromax(arr, start, timeDiff, check) {
     let res = [];
     let min;
@@ -208,7 +274,7 @@ function sortPromax(arr, start, timeDiff, check) {
     if (minItem) {
         res = [minItem, ...res];
     }
-
+    console.log('sortPromax: ', res.length)
     return res;
 }
 
@@ -231,4 +297,4 @@ function extraDataMCMOT(item, dr) {
     return item
 }
 
-module.exports = { addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
+module.exports = { mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
