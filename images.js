@@ -4,7 +4,6 @@ const path = require('path');
 const canvas = createCanvas(500, 500);
 const ctx = canvas.getContext('2d');
 const { exec } = require('child_process');
-const { getFixedColor } = require('./util');
 const {colors, categories} = require('./contanst');
 
 function handleImageMoving(fileInput, outPath) {
@@ -71,7 +70,7 @@ function handleImageDET(fileInput, pathDET, objects) {
   
               // Save the canvas as an image file
               const out = fs.createWriteStream(pathDET);
-              const stream = canvas.createPNGStream();
+              const stream = canvas.createJPEGStream();
               stream.pipe(out);
               out.on('finish', () => console.log('The image was saved.'));
 
@@ -86,6 +85,7 @@ function handleImageDET(fileInput, pathDET, objects) {
 
 // Function to handle image upload
 async function handleImageMOT(fileInputs, outputDir, objects, file) {
+  console.log('Processing images...', fileInputs.length);
   const promises = fileInputs.map((fileInput, index) => {
     const fileName = fileInput[1].split('.')[0];; // Get the file name from the file input
 
@@ -193,7 +193,7 @@ function deletePngFiles(dirPath) {
  * Renames a folder synchronously.
  * @param {string} oldPath - The current path of the folder.
  * @param {string} newPath - The new path of the folder.
- */
+*/
 function renameFolderSync(oldPath, newPath) {
   return new Promise((resolve, reject) => {
     try {

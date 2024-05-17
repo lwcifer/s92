@@ -30,4 +30,31 @@ const colors = {
   'bus': '#0000FF',
 }
 
-module.exports = { PATH_STRING, categories, colors }
+const DRONE_DEFAULT_VALUES = {
+  '2' : {
+    'INS_PITCH_ALIGNMENT_VISABLE': '-0.500000',
+    'PX2CB_X_VISABLE': '0.300000',
+    'PX2CB_Y_VISABLE': '1.700000',
+    'PX2CB_Z_VISABLE': '182.40000',
+  },
+  '3' : {
+    'INS_PITCH_ALIGNMENT_VISABLE': '0',
+    'PX2CB_X_VISABLE': '-1.000000',
+    'PX2CB_Y_VISABLE': '-0',
+    'PX2CB_Z_VISABLE': '178',
+  },
+  '4' : {
+    'INS_PITCH_ALIGNMENT_VISABLE': '2',
+    'PX2CB_X_VISABLE': '-2.6',
+    'PX2CB_Y_VISABLE': '0.5',
+    'PX2CB_Z_VISABLE': '180',
+  },
+  '5' : {
+    'INS_PITCH_ALIGNMENT_VISABLE': '0',
+    'PX2CB_X_VISABLE': '-1.5',
+    'PX2CB_Y_VISABLE': '3',
+    'PX2CB_Z_VISABLE': '180',
+  },
+}
+
+module.exports = { PATH_STRING, categories, colors, DRONE_DEFAULT_VALUES }
