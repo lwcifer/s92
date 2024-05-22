@@ -2,10 +2,16 @@ const fs = require('fs');
 const path = require('path');
 const { PATH_STRING } = require('./contanst');
 
+function splitTextAndNumbers(input) {
+  // Find all parts of the string that are either letters or digits
+  const parts = input.match(/[A-Za-z]+|\d+/g);
+  return parts;
+}
+
 /***/
+// inputString: car_1
 function getFixedColor(inputString) {
-    let category = inputString.split('_')[0]
-    let id = inputString.split('_')[1]
+    let [category, id] = splitTextAndNumbers(inputString)
     let number = ''
     switch (category) {
         case 'car':
@@ -297,4 +303,8 @@ function extraDataMCMOT(item, dr) {
     return item
 }
 
-module.exports = { mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
+function convertNumberToAnyDigit(number, digit) {
+    return number.toString().padStart(digit, '0');
+}
+
+module.exports = { mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime, convertNumberToAnyDigit }

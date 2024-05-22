@@ -3,7 +3,7 @@ const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const { DETInputFormat, KLVInputFormat, PPKInputFormat } = require('./input_format_constants');
 const { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } = require('./output_format_constants');
-const { mergeArrays, addDifferenceTime, addDifferenceTimeGetTime, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT } = require('./util');
+const { mergeArrays, addDifferenceTime, addDifferenceTimeGetTime, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, convertNumberToAnyDigit } = require('./util');
 const { PATH_STRING, categories, DRONE_DEFAULT_VALUES } = require('./contanst');
 const { drawText, drawBoundingBox, handleImageDET, handleImageMOT} = require('./images');
 const { exec } = require('child_process');
@@ -13,10 +13,12 @@ const { exec } = require('child_process');
 let inputDir = 'C:/Users/PC/Downloads/input';
 let outDir = 'C:/Users/PC/Documents/s92';
 let mod = 'all';
-let fps = 10;
+let fps = 50;
+
 let ppkTimeDifference = 32400;
 let klvTimeDifference = 18;
 const digitFileName = 5;
+const fpsOutput = 10;
 
 // Create a canvas and context
 const canvas = createCanvas(500, 500);
@@ -55,14 +57,18 @@ function processDETLine(line) {
 let indexOfKLV = 1;
 let indexOfPPK = 1;
 let indexOfLog = 1;
-function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
+function convertTxtToDet (date, droneName, clipName, fileInput, unplanned = true) {
   return new Promise(async (resolve, reject) => {
     try {
       const plannedText = unplanned ? 'Unplanned' : 'Planned';
       const inputClipDir = path.join(inputDir, date, 'DETMOT', plannedText, droneName, clipName);
-      const fileName = file.split('.')[0];
+      const file = fileInput.split('.')[0];
+      const fileName = convertNumberToAnyDigit(file*(fps/fpsOutput), 8);
 
       const fileURL = path.join(inputClipDir, 'TXT', fileName+'.txt');
+      if (!fs.existsSync(fileURL)) {
+        resolve(['', '']);
+      }
       // Read the file content synchronously
       const fileContent = fs.readFileSync(fileURL, 'utf8');
       // Split the file content by new line character '\n'
@@ -115,7 +121,6 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
       console.log('indexOfKLV', indexOfKLV, 'indexOfPPK', indexOfPPK, 'indexOfLog', indexOfLog)
       const contentMetadataKLV = metadataOutputFormat.map(item => {
           if(item === 'precisionTimeStamp') {
-            console.log('linesKLV[indexOfKLV]', linesKLV[indexOfKLV][0], addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference))
             return linesKLV[indexOfKLV][0] && addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference) || '0';
           }
           if(item === 'platformTailNumber' || item === 'platformDesignation') {
@@ -149,8 +154,8 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
           createDirectory(outputMetaDir)
       }
 
-      const fileKlv = `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.txt`;
-      const filePpk = `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}(PPK).txt`;
+      const fileKlv = `${date}_${droneName}_${clipName}_${file}.txt`;
+      const filePpk = `${date}_${droneName}_${clipName}_${file}(PPK).txt`;
       const droneDefaultValue = DRONE_DEFAULT_VALUES[droneName];
       fs.writeFileSync(path.join(outDir, outputMetaDir, fileKlv), 
         (contentMetadataKLV.toString() + 
@@ -168,20 +173,20 @@ function convertTxtToDet (date, droneName, clipName, file, unplanned = true) {
       if (!fs.existsSync(outDir+outputDETPath)) {
           createDirectory(outputDETPath)
       }
-      fs.writeFileSync(path.join(outDir, outputDETPath, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.txt`), newContent);
+      fs.writeFileSync(path.join(outDir, outputDETPath, `${date}_${droneName}_${clipName}_${file}.txt`), newContent);
 
       const outputDETVisualizedPath = path.join(outputDir, PATH_STRING.det_visualized);
       if (!fs.existsSync(outDir + outputDETVisualizedPath)) {
           createDirectory(outputDETVisualizedPath)
       }
-      const imgURL = path.join(path.join(outDir, outputDir, 'Images'), fileName.slice(-digitFileName) +'.jpg');
+      const imgURL = path.join(path.join(outDir, outputDir, 'Images'), fileInput);
 
-      const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${fileName.slice(-digitFileName)}.jpg`);
+      const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${file}.jpg`);
 
       await handleImageDET(imgURL, pathOutImg, lines)
 
       //return MOT content file
-      const newContentMOT = lines.map(line => processMOTLine(line, fileName)).join('\n');
+      const newContentMOT = lines.map(line => processMOTLine(line, file)).join('\n');
       resolve([newContentMOT, imgURL]);
     } catch (error) {
       reject(error);
@@ -202,21 +207,27 @@ async function convertInputToDETMOT(date, drone, clip, droneDir, unplanned) {
     if(fs.readdirSync(path.join(clipDir)).length === 0 ) return;
 
     const videoUrl = path.join(clipDir, 'video.mp4');
-    if (!fs.existsSync(path.join(outDir, outputDir, 'Images'))) {
+    const imagesPath = path.join(outDir, outputDir, 'Images');
+    if (!fs.existsSync(imagesPath)) {
       createDirectory(path.join(outputDir, 'Images'))
     }
-    await convertToFrames(videoUrl, path.join(outDir, outputDir, 'Images'), 10);
+    await convertToFrames(videoUrl, imagesPath, fpsOutput);
     console.log('convert To Frames done.');
 
     const detFolderFiles = fs.readdirSync(path.join(clipDir, 'TXT'))
     // Filter out only .txt files
     const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
-    
+
+    const imagesFiles = fs.readdirSync(imagesPath);
     // Process each .txt file
-    for (const file of detFiles) {
+    for (const file of imagesFiles) {
       const [contentLine, imgURL] = await convertTxtToDet(date, drone, clip, file, unplanned);
-      motContentFile.push(contentLine);
-      motImgs.push([imgURL, file]);
+      if(imgURL) {
+        motImgs.push([imgURL, file]);
+      }
+      if(contentLine) {
+        motContentFile.push(contentLine);
+      }
     }
 
     const outputMOTVisualizedPath = path.join(outputDir, PATH_STRING.mot_visualized);
@@ -229,7 +240,7 @@ async function convertInputToDETMOT(date, drone, clip, droneDir, unplanned) {
     if (!fs.existsSync(outDir+outputFilePath)) {
         createDirectory(outputFilePath)
     }
-
+    
     await handleImageMOT(motImgs, pathOutMOTVisualized, motContentFile, `${date}_${drone}_${clip}`);
 
     const newContent = motContentFile.join('\n');
@@ -246,7 +257,7 @@ function processMOTLine(line, fileName) {
     const target_id = categories[values[DETInputFormat.name]];
 
     const newValues = {
-        'frame_index': fileName.slice(-digitFileName),
+        'frame_index': fileName*1,
         'target_id': values[DETInputFormat.name]+ values[DETInputFormat.id],
         'bbox_cx': cx,
         'bbox_cy': cy,
@@ -498,7 +509,7 @@ function handleImageBoxMCMOT(fileInput, path, objects) {
 // Function to convert video to frames
 function convertToFrames(inputVideo, outputFramesDir, fps) {
   return new Promise((resolve, reject) => {
-      exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} ${outputFramesDir}/%05d.jpg`, (error, stdout, stderr) => {
+      exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} ${outputFramesDir}/%08d.jpg`, (error, stdout, stderr) => {
           if (error) {
               console.log('error', error)
               reject(error);

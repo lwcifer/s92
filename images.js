@@ -5,6 +5,7 @@ const canvas = createCanvas(500, 500);
 const ctx = canvas.getContext('2d');
 const { exec } = require('child_process');
 const {colors, categories} = require('./contanst');
+const { getFixedColor } = require('./util');
 
 function handleImageMoving(fileInput, outPath) {
     
@@ -36,7 +37,7 @@ function drawText(ctx, text, y, x, color = 'green') {
 }
 
 // Function to draw a dot at a specific position
-function drawBoundingBox(ctx, centerX, centerY, width, height, color) {
+function drawBoundingBox(ctx, centerX, centerY, width, height, color = 'green') {
    const topLeftX = centerX - width / 2;
    const topLeftY = centerY - height / 2;
 
@@ -64,8 +65,9 @@ function handleImageDET(fileInput, pathDET, objects) {
                   const width = object[5]*1;
                   const height = object[6]*1;
 
+                  const objColor = getFixedColor(object[1]+ '_' + object[2]);
                   drawText(ctx, categories[object[1]], xcenter - width/2 + 2, ycenter - height/2 - 5);
-                  drawBoundingBox(ctx, xcenter, ycenter, width, height, colors[object[1]+object[2]]); 
+                  drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor); 
               });
   
               // Save the canvas as an image file
@@ -104,8 +106,10 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
             const ycenter = object[3]*1;
             const width = object[4]*1;
             const height = object[5]*1;
+            
+            const objColor = getFixedColor(object[1]);
             drawText(ctx,  object[1], xcenter - width/2 + 2, ycenter - height/2 - 5);
-            drawBoundingBox(ctx, xcenter, ycenter, width, height, colors[object[1]]); 
+            drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor); 
           });
 
           // Save the canvas as an image file
