@@ -14,11 +14,11 @@
     <div class="form">
         <div class="item">
             <label for="inputFolderPath">Input folder</label>
-            <input type="text" id="inputFolderPath" value="C:\DABEEO\newfolder\input240427" name="inputpath" placeholder="Enter input folder path...">
+            <input type="text" id="inputFolderPath" value="D:\S92\input240523" name="inputpath" placeholder="Enter input folder path...">
         </div>
         <div class="item">
             <label for="outputFolderPath">Output folder</label>
-            <input type="text" id="outputFolderPath" value="C:\DABEEO\newfolder\out240427" name="outputpath" placeholder="Enter output folder path...">
+            <input type="text" id="outputFolderPath" value="D:\S92\output_28" name="outputpath" placeholder="Enter output folder path...">
         </div>
         <div class="item">
             <label for="fps">FPS</label>
@@ -31,15 +31,17 @@
                 <option value="1">DET & MOT</option>
                 <option value="2">MCMOT</option>
                 <option value="3">Images & Video</option>
+                <option value="4">MCMOT Images</option>
+                <option value="5">MCMOT Labeled Images</option>
             </select>
         </div>
         <div class="item">
             <label for="inputFolderPath">KLV time difference (second)</label>
-            <input type="number" value="18" id="klvTimeDifference" name="klvtimedifference" placeholder="Enter KLV time difference">
+            <input type="number" value="0" id="klvTimeDifference" name="klvtimedifference" placeholder="Enter KLV time difference">
         </div>
         <div class="item">
             <label for="inputFolderPath">PPK time difference (second)</label>
-            <input type="number" value="32400" id="ppkTimeDifference" name="ppktimedifference" placeholder="Enter PPK time difference">
+            <input type="number" value="0" id="ppkTimeDifference" name="ppktimedifference" placeholder="Enter PPK time difference">
         </div>
         <button id="convertButton">Convert</button>
     </div>

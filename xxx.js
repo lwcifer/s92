@@ -27,7 +27,7 @@ function handleImageUpload(fileInput, path) {
 function convertImages() {
     return new Promise((resolve, reject) => {
         try {
-            const dir2 = 'C:/DABEEO//newfolder/MCMOT/FTP07_04_7_240427_002/labeled images'
+            const dir2 = 'D:/S92/input240523/240427/0007/3/images'
             const dir = 'C:/DABEEO/newfolder/MCMOT/FTP07_05_6_240427_002/original images'
             const name = '240427_0007_5'
             const files = fs.readdirSync(path.join(dir))

@@ -1,6 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-const { PATH_STRING } = require('./contanst');
+import fs from 'fs';
+import path from 'path';
+import { PATH_STRING, categories, DRONE_DEFAULT_VALUES } from './contanst.js';
 
 /***/
 function getFixedColor(inputString) {
@@ -85,6 +85,7 @@ function uFrameIndexToTime(startTime, index, fps) {
     const timestamp = (index / fps) * 1000
     const date = new Date(startTime)
     const timestampFromDateString = date.getTime() + timestamp
+
     return timestampFromDateString
 }
 
@@ -152,6 +153,8 @@ function isValidDate(date) {
 }
 
 function addDifferenceTimeGetTime(root, difference) {
+    return new Date(root).getTime();
+
     let date = root.split(' ')[0]
     let rootDate = new Date(date);
     if (!isValidDate(rootDate)) {
@@ -173,31 +176,36 @@ function addDifferenceTimeGetTime(root, difference) {
 
 /**/
 
-function mergeArrays(array1, klv, ppk, speed, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference) {
+function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference, beaconTimeDifference) {
     // Duyệt qua từng phần tử trong array1
     return array1.map(item1 => {
         let closestItemKLV = null;
         let closestItemPPK = null;
         let closestItemSpeed = null;
+        let closestItemBeacon = null;
         let minTimeDifferenceKLV = Infinity;
         let minTimeDifferencePPK = Infinity;
         let minTimeDifferenceSpeed = Infinity;
+        let minTimeDifferenceBeacon = Infinity;
         let timeklv = '';
         let timeppk = '';
         let timespeed = '';
-        const g1 = uFrameIndexToTime(rootTime, parseInt(item1.split(',')[0]), fps);
+        let timebeacon = '';
+        // console.log('mergeArrays', (klv[item1.split(',')[0]].split(',')[0]))
+        const g1 = new Date(klv[item1.split(',')[0]].split(',')[0]).getTime();
 
         // Tìm phần tử có thời gian gần đúng nhất trong klv
-        klv.forEach(item2 => {
-            if (item2 && item2.trim().length > 0) {
-                timeklv = addDifferenceTimeGetTime(item2.split(',')[0], klvTimeDifference);
-                const timeDifference = Math.abs(g1 - timeklv);
-                if (timeDifference < minTimeDifferenceKLV) {
-                    minTimeDifferenceKLV = timeDifference;
-                    closestItemKLV = item2;
-                }
-            }
-        });
+        closestItemKLV = extraDataMCMOT(klv[item1.split(',')[0]], drone);
+        // klv.forEach(item2 => {
+        //     if (item2 && item2.trim().length > 0) {
+        //         timeklv = addDifferenceTimeGetTime(item2.split(',')[0], klvTimeDifference);
+        //         const timeDifference = Math.abs(g1 - timeklv);
+        //         if (timeDifference < minTimeDifferenceKLV) {
+        //             minTimeDifferenceKLV = timeDifference;
+        //             closestItemKLV = extraDataMCMOT(item2, drone);
+        //         }
+        //     }
+        // });
 
         // Tìm phần tử có thời gian gần đúng nhất trong ppk
         ppk.forEach(item2 => {
@@ -218,25 +226,35 @@ function mergeArrays(array1, klv, ppk, speed, drone, rootTime, fps, klvTimeDiffe
                 const timeDifference = Math.abs(g1 - timespeed);
                 if (timeDifference < minTimeDifferenceSpeed) {
                     minTimeDifferenceSpeed = timeDifference;
-                    closestItemSpeed = item2;
+                    closestItemSpeed =  item2;
                 }
             }
         });
 
-        // Hợp nhất giá trị từ phần tử gần đúng nhất của klv, ppk, và speed vào array1
+        // Tìm phần tử có thời gian gần đúng nhất trong beacon
+        beacon.forEach(item2 => {
+            if (item2 && item2.trim().length > 0) {
+                timebeacon = addDifferenceTimeGetTime(item2.split(',')[0], beaconTimeDifference);
+                const timeDifference = Math.abs(g1 - timebeacon);
+                if (timeDifference < minTimeDifferenceBeacon) {
+                    minTimeDifferenceBeacon = timeDifference;
+                    closestItemBeacon = item2;
+                }
+            }
+        });
+
+        // Hợp nhất giá trị từ phần tử gần đúng nhất của klv, ppk, speed và beacon vào array1
         return {
             drone,
-            time: new Date(g1),
-            timeklv: new Date(timeklv),
-            timeppk: new Date(timeppk),
-            timespeed: new Date(timespeed),
             segment: item1,
             klv: closestItemKLV || '',
             ppk: closestItemPPK || '',
-            speed: closestItemSpeed || ''
+            speed: closestItemSpeed || '',
+            beacon: closestItemBeacon || ''
         };
     });
 }
+
 
 function sortPromax(arr, start, timeDiff, check) {
     let res = [];
@@ -297,4 +315,14 @@ function extraDataMCMOT(item, dr) {
     return item
 }
 
-module.exports = { mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
+function getFileName(dir, type) {
+    const files = fs.readdirSync(dir);
+    const file = files.find(file => path.extname(file) === type);
+    if (!file) {
+        throw new Error('No .mp4 file found in the directory');
+    }
+    return file;
+}
+
+
+export { getFileName, mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }

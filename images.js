@@ -1,10 +1,10 @@
-const fs = require('fs');
-const { createCanvas, loadImage } = require('canvas');
-const path = require('path');
+import fs from 'fs';
+import { createCanvas, loadImage } from 'canvas';
+import path from 'path';
 const canvas = createCanvas(500, 500);
 const ctx = canvas.getContext('2d');
-const { exec } = require('child_process');
-const {colors, categories} = require('./contanst');
+import { exec } from 'child_process';
+import { colors, categories } from './contanst.js';
 
 function handleImageMoving(fileInput, outPath) {
     
@@ -207,4 +207,4 @@ function renameFolderSync(oldPath, newPath) {
   });
 }
 
-module.exports = {drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT}
+export {drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT}

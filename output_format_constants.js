@@ -55,7 +55,7 @@ const metadataOutputFormat = [
     'platformSpeed',
 ]
 
-module.exports = {
+export {
     DETOutputFormat,
     MOTOutputFormat,
     metadataOutputFormat,
