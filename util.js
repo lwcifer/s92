@@ -141,6 +141,7 @@ function formatDate(date) {
 }
 
 function addDifferenceTime(root, difference) {
+  return root;
     let rootDate = new Date(root.split(' ')[0]);
 
     // Create a new Date object from the root to avoid modifying the original date
