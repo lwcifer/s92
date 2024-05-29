@@ -5,7 +5,7 @@ const canvas = createCanvas(500, 500);
 const ctx = canvas.getContext('2d');
 import { exec } from 'child_process';
 import { colors, categories } from './contanst.js';
-import { getFixedColor } from ('./util.js');
+import { getFixedColor } from './util.js';
 
 function handleImageMoving(fileInput, outPath) {
     

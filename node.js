@@ -340,12 +340,8 @@ function contentMCMOT(date, sortie, clip, segments) {
             const objs = txtFileContent.trim().split(',');
             const rootTime = new Date(lines[objs[0]].split(',')[0]).getTime();
             console.log('rootTime', objs[0], lines[objs[0]].split(',')[0])
-            console.log('segments', segments.length)
             xxx = mergeArrays(segments, lines, ppk, speedData, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, 0)
         })
-
-        console.log('xxx', xxx.length > 1 ? xxx[1] : '')
-        console.log('www', xxx.length > 1 ? xxx[xxx.length - 1] : '')
 
         const ck = {}
         for (let i = 0; i < xxx.length; i++) {
@@ -547,9 +543,9 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                         fileData = [...fileData, ...objs];
                     }
                     if (mode === '5') {
-                        const pathOutImg = path.join(outDir, droneOutDir, 'Images',`${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`);
-                        await toMCMOTImages(imgURL, pathOutImg, objs);
-                        // await handleImageBoxMCMOT(imgURL, pathOutImg, objs);
+                        // const pathOutImg = path.join(outDir, droneOutDir, 'Images',`${date}_${clip}_${drone}_${fileName.slice(-digitFileName)}.jpg`);
+                        // await toMCMOTImages(imgURL, pathOutImg, objs);
+                        await handleImageBoxMCMOT(imgURL, pathOutImg, objs);
                     }
                 };
                 
@@ -569,7 +565,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                 });
 
                 if (mode !== '5') {
-                    console.log('fileData xxxxxxxx:', fileData.length)
+                    // console.log('fileData:', fileData.length)
                     const [contentTargetBox, contentTargetMain, contentTargetPos] = contentMCMOT(date, sortie, clip, fileData)
                     
                     exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}.xml`)
