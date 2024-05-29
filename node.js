@@ -632,7 +632,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
     clipFolderFiles.forEach(drone => {
         if (mode === '4') {
             // MCMOT To Frames
-            limit1(() => MCMOTToFrames(date, sortie, clip, drone, 50));
+            limit(() => MCMOTToFrames(date, sortie, clip, drone, 50));
             // MCMOTToFrames(date, sortie, clip, drone, 50)
         } else {
             const droneOutDir = path.join(date, PATH_STRING.train,'MCMOT', sortie, clip, drone)
