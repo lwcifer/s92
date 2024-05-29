@@ -18,7 +18,7 @@ function handleImageMoving(fileInput, outPath) {
             ctx.drawImage(img, 0, 0);
             // Save the canvas as an image file
             const out = fs.createWriteStream(outPath);
-            const stream = canvas.createJPEGStream({quality: 1});
+            const stream = canvas.createJPEGStream({quality: 0.9});
             stream.pipe(out);
             // out.on('finish', () => console.log('The image was saved.'));
         }).catch((err) => {
@@ -28,11 +28,14 @@ function handleImageMoving(fileInput, outPath) {
 }
 
 // Draw text 
-function drawText(ctx, text, y, x, color = 'green') {
+function drawText(ctx, text, x, y, color = 'green') {
     if (text && ctx) {
         ctx.fillStyle = color;
         ctx.font = 'normal 900 14px Arial';
-        ctx.fillText(text, y, x);
+        if(y + 14 > 720) {
+          y = 720 - 14;
+        }
+        ctx.fillText(text, x, y);
     }
 }
 
@@ -59,23 +62,50 @@ function handleImageDET(fileInput, pathDET, objects) {
               ctx.drawImage(img, 0, 0);
  
               objects.forEach(object => {
-                  object = object.split(',')
-                  const xcenter = object[3]*1 + object[5]*1 /2;
-                  const ycenter = object[4]*1 + object[6]*1 /2;
-                  const width = object[5]*1;
-                  const height = object[6]*1;
+                  // Split the object string and get the bounding box coordinates
+                  object = object.trim().split(',')
+                  let xmin = object[3]*1;
+                  let ymin = object[4]*1;
+                  let xcenter = object[3]*1 + object[5]*1 /2;
+                  let ycenter = object[4]*1 + object[6]*1 /2;
+                  let width = object[5]*1;
+                  let height = object[6]*1;
+                  let xmax = xcenter + width/2;
+                  let ymax = ycenter + height/2;
+                  
+                  // Check if the bounding box is out of the image
+                  if(xmax > 1280) {
+                    width = width - (xmax - 1280);
+                    xmax = 1280;
+                    xcenter = xmax - width/2;
+                  }
+                  if(ymax > 720) {
+                    height = height - (ymax - 720);
+                    ymax = 720;
+                    ycenter = ymax - height/2;
+                  }
+                  if(xmin < 0) {
+                    width = width - (0 - xmin);
+                    xmin = 0;
+                    xcenter = xmin + width/2;
+                  }
+                  if(ymin < 0) {
+                    height = height - (0 - ymin);
+                    ymin = 0;
+                    ycenter = ymin + height/2;
+                  }
 
+                  // Draw bounding box and text
                   const objColor = getFixedColor(object[1]+ '_' + object[2]);
-                  drawText(ctx, categories[object[1]], xcenter - width/2 + 2, ycenter - height/2 - 5);
+                  drawText(ctx, categories[object[1].trim()], xcenter - width/2 + 2, ycenter - height/2 - 5);
                   drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor); 
               });
   
               // Save the canvas as an image file
               const out = fs.createWriteStream(pathDET);
-              const stream = canvas.createJPEGStream();
+              const stream = canvas.createJPEGStream({quality: 0.9});
               stream.pipe(out);
               out.on('finish', () => console.log('The image was saved.'));
-
               resolve()
           }).catch((err) => {
               console.error('Error loading image:', err);
@@ -87,9 +117,11 @@ function handleImageDET(fileInput, pathDET, objects) {
 
 // Function to handle image upload
 async function handleImageMOT(fileInputs, outputDir, objects, file) {
-  console.log('Processing images...', fileInputs.length);
+  console.log('Processing images...', fileInputs.length, objects);
+  objects = objects.map(object => object.split(','));
   const promises = fileInputs.map((fileInput, index) => {
-    const fileName = fileInput[1].split('.')[0];; // Get the file name from the file input
+    const fileName = fileInput[1].split('.')[0];
+    const frameNo = fileInput[2] // Get the file name from the file input
 
     return new Promise((resolve, reject) => {
       fs.readFile(fileInput[0], (err, data) => {
@@ -100,22 +132,24 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
           // Draw bounding box and text
-          objects[index].split('\n').forEach(object => {
-            object = object.split(',')
-            const xcenter = object[2]*1;
-            const ycenter = object[3]*1;
-            const width = object[4]*1;
-            const height = object[5]*1;
-            
-            const objColor = getFixedColor(object[1]);
-            drawText(ctx,  object[1], xcenter - width/2 + 2, ycenter - height/2 - 5);
-            drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor); 
-          });
+          const objectsOfIndex = objects.filter(object => object[0] == frameNo);
+          if(objectsOfIndex.length > 0) {
+            objectsOfIndex.forEach(object => {
+              let xcenter = object[2]*1;
+              let ycenter = object[3]*1;
+              let width = object[4]*1;
+              let height = object[5]*1;
+
+              const objColor = getFixedColor(object[1]);
+              drawText(ctx,  object[1], (xcenter - 35) + width/2 , ycenter - height/2 - 5);
+              drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor); 
+            });
+          }
 
           // Save the canvas as an image file
-          const outPath = path.join(outputDir, `${index+1}.png`);
+          const outPath = path.join(outputDir, `${index}.jpg`);
           const out = fs.createWriteStream(outPath);
-          const stream = canvas.createPNGStream();
+          const stream = canvas.createJPEGStream({quality: 0.9});
           stream.pipe(out);
           out.on('finish', () => {
             console.log(`Image ${fileName} was saved.`);
@@ -135,7 +169,7 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
   // Convert images to video
   const inputFramesDir = outputDir;
   console.log('Converting images to video...', inputFramesDir);
-  const outputVideo = path.join(outputDir, 'output.mp4');
+  const outputVideo = path.join(outputDir, `${file}.mp4`);
   const fps = 10;
   await convertToVideo(inputFramesDir, outputVideo, fps);
   console.log('Video conversion completed.', path.dirname(inputFramesDir));
@@ -146,7 +180,7 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
 // Function to convert frames to video using FFMPEG
 function convertToVideo(inputDir, outputDir, fps) {
   return new Promise((resolve, reject) => {
-    const command = `ffmpeg -framerate ${fps} -i "${inputDir}/%01d.png" -c:v libx264 -pix_fmt yuv420p ${outputDir}`;
+    const command = `ffmpeg -framerate ${fps} -i "${inputDir}/%01d.jpg" -c:v libx264 -pix_fmt yuv420p -preset fast -threads 0 -crf 23 ${outputDir}`;
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error('Error during conversion:', error);
@@ -173,7 +207,7 @@ function deletePngFiles(dirPath) {
       // Loop through all the files
       files.forEach((file) => {
         // Check if the file ends with .png
-        if (path.extname(file).toLowerCase() === '.png') {
+        if (path.extname(file).toLowerCase() === '.png' || path.extname(file).toLowerCase() === '.jpg'){
           // Construct the full path of the file
           const filePath = path.join(dirPath, file);
 
