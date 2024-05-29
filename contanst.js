@@ -57,4 +57,4 @@ const DRONE_DEFAULT_VALUES = {
   },
 }
 
-module.exports = { PATH_STRING, categories, colors, DRONE_DEFAULT_VALUES }
+export { PATH_STRING, categories, colors, DRONE_DEFAULT_VALUES }

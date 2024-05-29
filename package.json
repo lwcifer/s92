@@ -2,18 +2,21 @@
   "name": "s92",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js"
   },
   "dependencies": {
     "amqplib": "^0.10.3",
+    "async_hooks": "^1.0.0",
     "canvas": "^2.11.2",
     "express": "^4.19.2",
     "ffmpeg": "^0.0.4",
     "ffmpeg.js": "^4.2.9003",
     "global": "^4.4.0",
     "nodemon": "^3.1.0",
+    "p-limit": "^5.0.0",
     "sharp": "^0.33.2",
     "xml-js": "^1.6.11",
     "xml2js": "^0.6.2",

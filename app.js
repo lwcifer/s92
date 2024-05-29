@@ -1,10 +1,10 @@
-const express = require('express');
+import express from 'express';
 const app = express();
-const bodyParser = require('body-parser');
+import bodyParser from 'body-parser';
 const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
-const { convert } = require('./node');
+import { convert } from './node.js';
 
 // Đường dẫn tĩnh cho các tệp HTML, CSS, JS
 app.use(express.static('public'));

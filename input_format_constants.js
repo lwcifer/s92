@@ -52,7 +52,7 @@ const PPKInputFormat = [
     'sensorTrueAltitude',
 ]
 
-module.exports = {
+export {
     DETInputFormat,
     MOTInputFormat,
     KLVInputFormat,
