@@ -856,7 +856,7 @@ async function convert(params) {
                                             linesPPK = filePPKContent.trim().split('\n').map(line => line.split(','));
 
                                             //get content metadata log
-                                            const logFileUrl = path.join(metaSortieInputDir,'LOG', metadataFileName+'_LOG.csv')
+                                            const logFileUrl = path.join(metaSortieInputDir,'LOG', metadataFileName+'_FC LOG.csv')
                                             const fileLogContent = fs.readFileSync(logFileUrl, 'utf8');
                                             linesLog = fileLogContent.trim().split('\n').map(line => line.split(','));
                                             if(filesDETClips.length > 0) {
