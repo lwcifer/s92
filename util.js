@@ -36,29 +36,8 @@ function getFixedColor(inputString) {
 }
 
 /***/
-function getStartFrame(drone) {
-    let res = 0
-    switch (drone) {
-        case '0004':
-            res = 0
-        break;
-        case '0005':
-            res = 105
-        break;
-        case '0006':
-            res = 210
-        break;
-        case '0007':
-            res = 315
-        break;
-        case '0008':
-            res = 420
-        break;
-        default:
-            res = 0
-            break;
-    }
-    return res
+function getStartFrame(clip, drone) {
+    return 0
 }
 
 function valueToText(val) {

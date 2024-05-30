@@ -11,6 +11,7 @@ const PATH_STRING = {
     images: 'Images',
     meta: 'Meta',
     mcmot_target_box: 'Annotation MCMOT TargetBox',
+    mcmot_target_box_ppk: 'Annotation MCMOT TargetBox PPK',
     mcmot_target_main: 'Annotation MCMOT TargetMain',
     mcmot_target_pos: 'Annotation MCMOT TargetPos',
     mcmot_visualized: 'Annotation MCMOT Visualized'

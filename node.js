@@ -13,6 +13,7 @@ import { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } from './output
 import { getFileName, getFixedColor, mergeArrays, addDifferenceTime, getStartFrame, addDifferenceTimeGetTime, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, convertNumberToAnyDigit} from './util.js';
 import { PATH_STRING, categories, DRONE_DEFAULT_VALUES } from './contanst.js';
 import { drawText, drawBoundingBox, handleImageDET, handleImageMOT, handleImageMoving } from './images.js';
+import { mergeXML } from './merge.js';
 
 
 // Define input and output filenames
@@ -471,13 +472,11 @@ function contentMCMOT(date, sortie, clip, segments) {
             ppk.shift();
 
             const rootTime = new Date(lines[startFrame].split(',')[0]).getTime();
-            // console.log('startFrame', startFrame)
-
             // lines = lines.slice(objs[0], +objs[1] + 1)
             // console.log('segments', segments, drone, segments[drone])
-            xxx = mergeArrays(segments[drone], lines, ppk, speedData, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, 0,0, startFrame)
+            if(segments[drone]) xxx = mergeArrays(segments[drone], lines, ppk, speedData, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, 0,0, startFrame)
 
-            console.log('xxx', xxx[0])
+            // console.log('contentMCMOT', xxx[0])
         })
 
         const ck = {}
@@ -493,7 +492,7 @@ function contentMCMOT(date, sortie, clip, segments) {
             let nem = valueToText(values[1])
             nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
             let box = parseInt(values[2]) + 1
-            const frameIndex = (parseInt(values[0]) - startFrame + getStartFrame(clip))
+            const frameIndex = (parseInt(values[0]) - startFrame + getStartFrame(clip, drone))/5
             if (!ck[values[1] + values[2]] ) {
                 let category = '0'
                 switch (valueToText(values[1]).split('_')[0]) {
@@ -667,7 +666,7 @@ function handleImageUpload(fileInput, path) {
             const out = fs.createWriteStream(path);
             const stream = canvas.createJPEGStream({quality: 1});
             stream.pipe(out);
-            out.on('finish', () => console.log('The image was saved.'));
+            // out.on('finish', () => console.log('The image was saved.'));
         }).catch((err) => {
             console.error('Error loading image:', err);
         });
@@ -678,8 +677,9 @@ async function toMCMOTImages(fileInput, path, objects) {
     handleImageUpload(fileInput, path)
 }
 
+let count = 0
+let cou = 0
 async function convertTxtToMCMOT(date, sortie, clip, mode) {
-    console.log('mode', mode)
     let fileData = {};
     
     let directoryPath = path.join(inputDir, date, 'MCMOT',sortie,clip);
@@ -690,17 +690,17 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
     });
 
     clipFolderFiles.forEach(drone => {
+        count++
         fileData[drone] = []
         if (mode === '4') {
             // MCMOT To Frames
             MCMOTToFrames(date, sortie, clip, drone, 50)
         } else {
-            const droneOutDir = path.join(date, PATH_STRING.train,'MCMOT', sortie, clip, drone)
+            const droneOutDir = path.join(date, PATH_STRING.train,'MCMOT', sortie, '0001', drone)
             if (!fs.existsSync(outDir+droneOutDir)) {
                 createDirectory(droneOutDir)
             }
 
-            console.log(path.join(inputDir, date, 'MCMOT', sortie, clip, drone))
             const filesInDrones = fs.readdirSync(path.join(inputDir, date, 'MCMOT', sortie, clip, drone));
             if(filesInDrones.length === 0 ) {
                 return;
@@ -719,10 +719,9 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                     const rangeFile = path.join(inputDir, date, 'MCMOT', sortie, clip, drone, 'range.txt')
                     const rangeFileContent = fs.readFileSync(rangeFile, 'utf8');
                     const range = rangeFileContent.trim().split(',');
-                    const startFrame = parseInt(range[0]) - getStartFrame(clip)
-                    const diff = range.length > 2 ? parseInt(range[2]) : 0
-                    fileName = (parseInt(fileName) + diff - 1).toString().padStart(5, '0');
-                    const imgName = (parseInt(fileName) - startFrame).toString().padStart(5, '0');
+                    const startFrame = parseInt(range[0]) - getStartFrame(clip, drone)
+                    fileName = (parseInt(fileName) - 1).toString().padStart(5, '0');
+                    const imgName = ((parseInt(fileName) - startFrame)/5).toString().padStart(5, '0');
                     const pathOutImg = path.join(outDir, droneImgOutDir, `${date}_${'0001'}_${drone}_${imgName.slice(-digitFileName)}.jpg`);
                     const txtFileName = fileName.padStart(8, '0');
                     const txtFile = `${inputDir}/${date}/MCMOT/${sortie}/${clip}/${drone}/TXT/${txtFileName}.txt`;
@@ -734,7 +733,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                     }
                     if (mode === '5') {
                         
-                        await handleImageBoxMCMOT(imgURL, pathOutImg, objs);
+                        await handleImageBoxMCMOT(imgURL, pathOutImg, objs, droneImgFiles.length);
 
                         let pathOutImgImg = path.join(outDir, droneOutDir, 'Images');
                         if (!fs.existsSync(pathOutImgImg)) {
@@ -744,6 +743,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                         pathOutImgImg = path.join(pathOutImgImg,`${date}_${'0001'}_${drone}_${imgName.slice(-digitFileName)}.jpg`);
 
                         await toMCMOTImages(imgURL, pathOutImgImg, objs);
+                        console.log('pathOutImg', pathOutImg)
                     }
                 };
                 
@@ -766,14 +766,26 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                 });
 
                 if (mode !== '5') {
-                    if (Object.keys(fileData).length === clipFolderFiles.length) {
-                        // console.log('fileData:', fileData)
+                    const processFiles = async () => {
                         const [contentTargetBox, contentTargetMain, contentTargetPos, contentTargetBoxPPK] = contentMCMOT(date, sortie, clip, fileData)
-                        exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}_${drone}.xml`)
-                        exportXmlToFile(contentTargetBoxPPK,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${clip}/${PATH_STRING.mcmot_target_box}/${date}_${clip}(PPK)_${drone}.xml`)
-                        exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${clip}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`)
-                        exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${clip}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}_${drone}.xml`)
-                    }
+                        await Promise.all([
+                            exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_box}/${date}_${clip}_${drone}.xml`),
+                            exportXmlToFile(contentTargetBoxPPK,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_box_ppk}/${date}_${clip}(PPK)_${drone}.xml`),
+                            exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`),
+                            exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}_${drone}.xml`)
+                        ])
+                    };
+                    processFiles().then(e => {
+                        cou++
+                        console.log("Xong rồi", cou, count);
+                        if (cou == count) {
+                            console.log("Xong thật rồi", cou);
+                            mergeXML(`${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/'}`, `${date}_${'0001'}`)
+                        }
+                    }).catch(err => {
+                        console.error("Đã xảy ra lỗi:", err);
+                    });
+                    
                 }
             }
         }
@@ -781,7 +793,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
 }
 
 // Function to handle image upload
-async function handleImageBoxMCMOT(fileInput, path, objects) {
+async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
     // console.log('handleImageBoxMCMOT', fileInput, path, objects)
     return new Promise((resolve, reject) => {
         try {
@@ -793,6 +805,7 @@ async function handleImageBoxMCMOT(fileInput, path, objects) {
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
                     // Draw bounding box and text
+                    let cc = 0
                     objects.forEach((object, index) => {
                         object = object.split(',')
                         let xcenter = +object[3]*1 + object[5]/2;
@@ -833,7 +846,6 @@ async function handleImageBoxMCMOT(fileInput, path, objects) {
                     const stream = canvas.createJPEGStream({quality: 1});
                     stream.pipe(out);
                     out.on('finish', () => {
-                        console.log(path);
                         resolve();
                     });
                     
