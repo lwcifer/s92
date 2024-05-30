@@ -8,7 +8,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { DOMParser } from "xmldom";
 
-import { DETInputFormat, KLVInputFormat, PPKInputFormat } from './input_format_constants.js';
+import { DETInputFormat, KLVInputFormat, PPKInputFormat, KLVInputFormatMSL } from './input_format_constants.js';
 import { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } from './output_format_constants.js';
 import { getFileName, getFixedColor, mergeArrays, addDifferenceTime, addDifferenceTimeGetTime, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, convertNumberToAnyDigit} from './util.js';
 import { PATH_STRING, categories, DRONE_DEFAULT_VALUES } from './contanst.js';
@@ -94,19 +94,15 @@ function processDETLine(line) {
 let indexOfKLV = 1;
 let indexOfPPK = 1;
 let indexOfLog = 1;
+let klvInputFormatUsed = [];
 function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, unplanned = true) {
   console.log('sortie', sortie)
   return new Promise(async (resolve, reject) => {
     try {
-
       const plannedText = unplanned ? 'Unplanned' : 'Planned';
-      const inputClipDir = path.join(inputDir, date, 'DETMOT', plannedText, droneName, sortie+'', clipName);
       const file = fileInput.split('.')[0];
       const sortieOutput = sortie.split('_')[1];
       const lines = labelClipDatas.filter((item) => item.includes(file));
-
-
-
 
       const timeOfFile = frameIndexToTime(addDifferenceTime(linesKLV[1][0], klvTimeDifference), index*1);
       let minDifferenceKLV = Infinity;
@@ -146,23 +142,30 @@ function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, u
           if(item === 'platformSpeed') {
             return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0' 
           }
-          return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfKLV][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+          
+          return klvInputFormatUsed.indexOf(item) >= 0 ? linesKLV[indexOfKLV][klvInputFormatUsed.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
       });
 
       const contentMetadataPPK = metadataOutputFormat.map(item => {
           if(item === 'precisionTimeStamp') {
             return linesKLV[indexOfKLV][0] && addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference) || '0';
           }
+
+          if(item ==='sensorTrueAltitude' && linesKLV[0].includes('MSL')) {
+            return linesKLV[indexOfKLV][9] || 'Null'
+          }
+
           if(['sensorLatitude','sensorLongitude','sensorTrueAltitude'].includes(item)) {
               return PPKInputFormat.indexOf(item) >= 0 ? linesPPK[indexOfPPK][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
           }
+          
           if(item === 'platformTailNumber' || item === 'platformDesignation') {
             return droneName;
           }
           if(item === 'platformSpeed') {
             return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0' 
           }
-          return KLVInputFormat.indexOf(item) >= 0 ? linesKLV[indexOfKLV][KLVInputFormat.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+          return klvInputFormatUsed.indexOf(item) >= 0 ? linesKLV[indexOfKLV][klvInputFormatUsed.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
       });
 
       const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, droneName, sortieOutput, clipName);
@@ -171,8 +174,8 @@ function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, u
           createDirectory(outputMetaDir)
       }
 
-      const fileKlv = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index+1, 5)}.txt`;
-      const filePpk = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index+1, 5)}(PPK).txt`;
+      const fileKlv = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index, 5)}.txt`;
+      const filePpk = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index, 5)}(PPK).txt`;
       const droneDefaultValue = DRONE_DEFAULT_VALUES[droneName];
       fs.writeFileSync(path.join(outDir, outputMetaDir, fileKlv), 
         (contentMetadataKLV.toString() + 
@@ -198,13 +201,13 @@ function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, u
       }
       const imgURL = path.join(path.join(outDir, outputDir, 'Images_Temp'), fileInput);
 
-      const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index+1, 5)}.jpg`);
+      const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index, 5)}.jpg`);
 
       await handleImageDET(imgURL, pathOutImg, lines)
-      fs.writeFileSync(path.join(outDir, outputDETPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index+1, 5)}.txt`), newContent);
+      fs.writeFileSync(path.join(outDir, outputDETPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index, 5)}.txt`), newContent);
 
       //return MOT content file
-      const newContentMOT = lines.map(line => processMOTLine(line, convertNumberToAnyDigit(index+1, 5))).join('\n');
+      const newContentMOT = lines.map(line => processMOTLine(line, convertNumberToAnyDigit(index, 5))).join('\n');
       resolve([newContentMOT, imgURL]);
     } catch (error) {
       reject(error);
@@ -270,14 +273,13 @@ function convertInputToDETMOT(date, drone, sortie, clip, droneDir, unplanned) {
       const klvFileUrl = path.join(inputKlvDir, `${sortie.split('_').join('')}_${convertNumberToAnyDigit(drone, 2)}_${clip*1}_${date}.csv`);
       const fileKLVContent = fs.readFileSync(klvFileUrl, 'utf8');
       linesKLV = fileKLVContent.trim().split('\n').map(line => line.split(','));
-
-      for (let index = 0; index < imagesFiles.length; index = index + 5) {
+      klvInputFormatUsed = linesKLV[0].includes('MSL') ?  KLVInputFormatMSL : KLVInputFormat;
+      for (let index = index; index < imagesFiles.length; index = index + 5) {
         const file = imagesFiles[index];
-       
         const [contentLine, imgURL] = await convertTxtToDet(date, drone, clip, file, sortie, index, unplanned );
         if(imgURL) {
-          motImgs.push([imgURL, file, index+1]);
-          handleImageMoving(imgURL, path.join(outDir, outputImagePath, `${date}_${drone*1}_${clip}_${convertNumberToAnyDigit(index+1, 5)}.jpg`));
+          motImgs.push([imgURL, file, index]);
+          handleImageMoving(imgURL, path.join(outDir, outputImagePath, `${date}_${drone*1}_${clip}_${convertNumberToAnyDigit(index, 5)}.jpg`));
         }
         if(contentLine) {
           motContentFile.push(contentLine);
@@ -390,7 +392,7 @@ function parseAnnotations(xmlData) {
       const annotation = annotations[i];
       const fileName = annotation.getElementsByTagName('filename')[0].textContent.split('.')[0];
       // Extract data from the annotation
-      const framenumber =  fileName +'_'+ convertNumberToAnyDigit(annotation.getElementsByTagName('framenumber')[0].textContent*1 +1, 8);
+      const framenumber =  fileName +'_'+ convertNumberToAnyDigit(annotation.getElementsByTagName('framenumber')[0].textContent, 8);
       const name = annotation.getElementsByTagName('name')[0].textContent;
       const id = annotation.getElementsByTagName('id')[0].textContent;
       const bndbox = annotation.getElementsByTagName("bndbox")[0];
@@ -778,20 +780,21 @@ async function handleImageBoxMCMOT(fileInput, path, objects) {
 
 
 // Function to convert video to frames
-function convertToFramesDET(inputVideo, outputFramesDir, fps, fileName, startFrame, endFrame) {
+function convertToFramesDET(inputVideo, outputFramesDir, fps, fileName) {
   return new Promise((resolve, reject) => {
-      console.log('fileName', fileName)
-      exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} -qscale:v 2 -threads 0 ${outputFramesDir}/${fileName}_%08d.jpg`, (error, stdout, stderr) => {
-          if (error) {
-              console.log('error', error)
-              reject(error);
-              return;
-          }
-          
-          resolve();
+    
+      exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} -q:v 2 -threads 0 -start_number 0 ${outputFramesDir}/${fileName}_%08d.jpg`, (error) => {
+        if (error) {
+          console.log('error', error)
+          reject(error);
+          return;
+        }
+        
+        resolve();
       });
   });
 }
+
 function convertToFrames(inputVideo, outputFramesDir, fps, startFrame, endFrame) {
     return new Promise((resolve, reject) => {
         console.log(inputVideo, outputFramesDir, fps, startFrame, endFrame)
@@ -813,6 +816,7 @@ function convertToFrames(inputVideo, outputFramesDir, fps, startFrame, endFrame)
 // Main function
 async function convert(params) {
     try {        
+        const timeStart = new Date();
         inputDir = params.input;
         outDir = params.output;
         mod = params.mode;
@@ -901,7 +905,8 @@ async function convert(params) {
                 }
             }
         }
-
+        const timeEnd = new Date();
+        console.log('Time taken:', timeEnd - timeStart, 'ms');
         console.log('Conversion complete.');
     } catch (error) {
         console.error('Error during conversion:', error);
