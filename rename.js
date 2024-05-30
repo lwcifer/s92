@@ -1,6 +1,6 @@
-const fs = require('fs');
-const { createCanvas, loadImage } = require('canvas');
-const path = require('path');
+import fs from 'fs';
+import { createCanvas, loadImage } from 'canvas';
+import path from 'path';
 
 const canvas = createCanvas(500, 500);
 const ctx = canvas.getContext('2d');
@@ -27,20 +27,17 @@ function handleImageUpload(fileInput, path) {
 function convertImages() {
     return new Promise((resolve, reject) => {
         try {
-            const dir2 = 'D:/S92/input240523/240427/0007/3/images'
-            const dir = 'C:/DABEEO/newfolder/MCMOT/FTP07_05_6_240427_002/original images'
+            const dir = 'D:/S92/s92/s92/240427/Train/MCMOT/07/0004/2/Images'
             const name = '240427_0007_5'
             const files = fs.readdirSync(path.join(dir))
-            const files2 = fs.readdirSync(path.join(dir2))
-            // files2.forEach(file => {
-            //     const url = `${dir2}/${file}` 
-            //     const x = `${dir2}/${name}_${file.split('.')[0]}.jpg`
-            //     handleImageUpload(url, x)
-            // });
             
             files.forEach(file => {
                 const url = `${dir}/${file}` 
-                const x = `${dir}/${name}_${file.split('.')[0]}.jpg`
+                let xxx = file.split('.')[0]
+                xxx = xxx.split('_')
+                let num = (xxx[3] - 1567).toString().padStart(5, '0');
+                const newFile = `${xxx[0]}_${xxx[1]}_${xxx[2]}_${num}`
+                const x = `${dir}/${newFile}.jpg`
                 handleImageUpload(url, x)
             });
 

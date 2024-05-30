@@ -36,9 +36,40 @@ function getFixedColor(inputString) {
 }
 
 /***/
+function getStartFrame(drone) {
+    let res = 0
+    switch (drone) {
+        case '0004':
+            res = 0
+        break;
+        case '0005':
+            res = 105
+        break;
+        case '0006':
+            res = 210
+        break;
+        case '0007':
+            res = 315
+        break;
+        case '0008':
+            res = 420
+        break;
+        default:
+            res = 0
+            break;
+    }
+    return res
+}
+
 function valueToText(val) {
     if (!val) {
         return 'Null'
+    }
+
+    if (!isNaN(val) && val.includes('e')) {
+        // Chuyển đổi chuỗi thành số và định dạng với 15 chữ số thập phân
+        let num = parseFloat(val);
+        return num.toFixed(18);
     }
 
     return val.trim().replace(/\0+$/, '')
@@ -97,21 +128,28 @@ function uFrameIndexToTime(startTime, index, fps) {
 
 /***/
 function exportXmlToFile(xmlContent, filename) {
-    console.log();
-    let dir = filename.split(path.posix.sep)
-    dir.pop()
-    dir = dir.toString().replaceAll(',', '/')
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-
-    fs.writeFile(filename, xmlContent, (err) => {
-        if (err) {
-            console.error('Error writing XML file:', err);
-        } else {
-            console.log('XML file saved successfully:', filename);
+    return new Promise((resolve, reject) => {
+        try {
+            let dir = filename.split(path.posix.sep)
+            dir.pop()
+            dir = dir.toString().replaceAll(',', '/')
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+        
+            fs.writeFile(filename, xmlContent, (err) => {
+                if (err) {
+                    reject(err)
+                    console.error('Error writing XML file:', err);
+                } else {
+                    resolve()
+                    console.log('XML file saved successfully:', filename);
+                }
+            });
+        } catch (error) {
+            reject(error)
         }
-    });
+    })
 }
 function setTimeToDate(date, timeString) {
     // Split the time string into its components
@@ -183,7 +221,7 @@ function addDifferenceTimeGetTime(root, difference) {
 
 /**/
 
-function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference, beaconTimeDifference) {
+function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference, beaconTimeDifference, startFrame) {
     // Duyệt qua từng phần tử trong array1
     return array1.map(item1 => {
         let closestItemKLV = null;
@@ -198,8 +236,9 @@ function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvT
         let timeppk = '';
         let timespeed = '';
         let timebeacon = '';
-        // console.log('mergeArrays', (klv[item1.split(',')[0]].split(',')[0]))
+
         const g1 = new Date(klv[item1.split(',')[0]].split(',')[0]).getTime();
+        // const g1 = uFrameIndexToTime(item1.split(',')[0], rootTime, fps);
 
         // Tìm phần tử có thời gian gần đúng nhất trong klv
         closestItemKLV = extraDataMCMOT(klv[item1.split(',')[0]], drone);
@@ -253,6 +292,7 @@ function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvT
         // Hợp nhất giá trị từ phần tử gần đúng nhất của klv, ppk, speed và beacon vào array1
         return {
             drone,
+            startFrame,
             segment: item1,
             klv: closestItemKLV || '',
             ppk: closestItemPPK || '',
@@ -335,6 +375,6 @@ function convertNumberToAnyDigit (number, digit) {
     return number.toString().padStart(digit, '0');
 }
 
-export { convertNumberToAnyDigit, getFileName, mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
+export { convertNumberToAnyDigit, getStartFrame, getFileName, mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
 
 
