@@ -200,7 +200,7 @@ function addDifferenceTimeGetTime(root, difference) {
 
 /**/
 
-function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference, beaconTimeDifference, startFrame) {
+function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference, beaconTimeDifference, startFrame, startIndex) {
     // Duyệt qua từng phần tử trong array1
     return array1.map(item1 => {
         let closestItemKLV = null;
@@ -272,6 +272,7 @@ function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvT
         return {
             drone,
             startFrame,
+            startIndex,
             segment: item1,
             klv: closestItemKLV || '',
             ppk: closestItemPPK || '',
