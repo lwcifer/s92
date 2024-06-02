@@ -145,7 +145,7 @@ function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, u
           return droneName;
         }
         if(item === 'platformSpeed') {
-          return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0' 
+          return linesLog[indexOfLog] && linesLog[indexOfLog][linesLog[0].includes('MSL') ? 7: 5] || '0' 
         }
 
         if(item ==='sensorTrueAltitude' && linesKLV[0].includes('MSL')) {
@@ -168,7 +168,7 @@ function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, u
           return droneName;
         }
         if(item === 'platformSpeed') {
-          return linesLog[indexOfLog] && linesLog[indexOfLog][5] || '0' 
+          return linesLog[indexOfLog] && linesLog[indexOfLog][linesLog[0].includes('MSL') ? 7: 5] || '0' 
         }
         return klvInputFormatUsed.indexOf(item) >= 0 ? linesKLV[indexOfKLV][klvInputFormatUsed.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
     });
