@@ -95,132 +95,143 @@ let indexOfKLV = 1;
 let indexOfPPK = 1;
 let indexOfLog = 1;
 let klvInputFormatUsed = [];
+let isLabeled = false;
+let labelClipDatas = [];
+let lastData = [];
+function groupBy(array) {
+  return array.reduce((max, object) => {
+    max = object.split(',')[0];
+    return max;
+  }, 0)
+}
+
 function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, unplanned = true) {
-  console.log('sortie', sortie)
   return new Promise(async (resolve, reject) => {
     try {
       const plannedText = unplanned ? 'Unplanned' : 'Planned';
       const file = fileInput.split('.')[0];
       const sortieOutput = sortie.split('_')[1];
-      const lines = labelClipDatas.filter((item) => item.split(',')[0]*1 == index);
-      console.log('lines', index)
-      if(lines.length === 0 || lines[0] === '') {
-        resolve(['', '']);
-        return;
+      const lines = labelClipDatas.filter((item) => item.split(',')[0] == index && item !== '');
+      console.log('lines', labelClipDatas.length-2)
+      if(lines.length > 0) {
+        isLabeled = true;
       }
-
-      const timeOfFile = frameIndexToTime(addDifferenceTime(linesKLV[1][0], klvTimeDifference), index*1);
-      let minDifferenceKLV = Infinity;
-      let minDifferencePPK = Infinity;
-      let minDifferenceLog = Infinity;
-      for (let i = indexOfKLV; i < linesKLV.length; i++) {
-        const klvTime = linesKLV[i] && addDifferenceTime(linesKLV[i][0], klvTimeDifference);
-        let difference = linesKLV[i] && timeDifference(klvTime, timeOfFile);
-        if (difference < minDifferenceKLV) {
-          minDifferenceKLV = difference;
-            indexOfKLV = i;
-        }
-    }
-    for (let i = indexOfPPK; i < linesPPK.length; i++) {
-      const ppkTime = linesPPK[i] && addDifferenceTime(linesPPK[i][0], ppkTimeDifference);
-      let difference = linesPPK[i] && timeDifference(ppkTime, timeOfFile);
-      if (difference < minDifferencePPK) {
-        minDifferencePPK = difference;
-        indexOfPPK = i;
-      }
-    }
-    for (let i = indexOfLog; i < linesLog.length; i++) {
-      const logTime = linesLog[i] && addDifferenceTime(linesLog[i][0], 0);
-      let difference = linesLog[i] && timeDifference(logTime, timeOfFile);
-      if (difference < minDifferenceLog) {
-          minDifferenceLog = difference;
-          indexOfLog = i;
-      }
-    }
-    const contentMetadataKLV = metadataOutputFormat.map(item => {
-        if(item === 'precisionTimeStamp') {
-          return linesKLV[indexOfKLV][0] && addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference) || '0';
-        }
-        if(item === 'platformTailNumber' || item === 'platformDesignation') {
-          return droneName;
-        }
-        if(item === 'platformSpeed') {
-          return linesLog[indexOfLog] && linesLog[indexOfLog][linesLog[0].includes('MSL') ? 7: 5] || '0' 
-        }
-
-        if(item ==='sensorTrueAltitude' && linesKLV[0].includes('MSL')) {
-          return linesKLV[indexOfKLV][9] || 'Null';
-        }
-        
-        return klvInputFormatUsed.indexOf(item) >= 0 ? linesKLV[indexOfKLV][klvInputFormatUsed.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
-    });
-
-    const contentMetadataPPK = metadataOutputFormat.map(item => {
-        if(item === 'precisionTimeStamp') {
-          return linesKLV[indexOfKLV][0] && addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference) || '0';
-        }
-
-        if(['sensorLatitude','sensorLongitude', 'sensorTrueAltitude'].includes(item)) {
-            return PPKInputFormat.indexOf(item) >= 0 ? linesPPK[indexOfPPK][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
-        }
-        
-        if(item === 'platformTailNumber' || item === 'platformDesignation') {
-          return droneName;
-        }
-        if(item === 'platformSpeed') {
-          return linesLog[indexOfLog] && linesLog[indexOfLog][linesLog[0].includes('MSL') ? 7: 5] || '0' 
-        }
-        return klvInputFormatUsed.indexOf(item) >= 0 ? linesKLV[indexOfKLV][klvInputFormatUsed.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
-    });
-
       const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, droneName, sortieOutput, clipName);
-      const outputMetaDir = path.join(outputDir, PATH_STRING.meta)
-      if (!fs.existsSync(outDir+ outputMetaDir)) {
-          createDirectory(outputMetaDir)
-      }
+      let imgURL = '';
+      if(isLabeled && index <= labelClipDatas[labelClipDatas.length-2].split(',')[0]*1) {
+        const timeOfFile = frameIndexToTime(addDifferenceTime(linesKLV[1][0], klvTimeDifference), index*1);
+        let minDifferenceKLV = Infinity;
+        let minDifferencePPK = Infinity;
+        let minDifferenceLog = Infinity;
+        for (let i = indexOfKLV; i < linesKLV.length; i++) {
+          const klvTime = linesKLV[i] && addDifferenceTime(linesKLV[i][0], klvTimeDifference);
+          let difference = linesKLV[i] && timeDifference(klvTime, timeOfFile);
+          if (difference < minDifferenceKLV) {
+            minDifferenceKLV = difference;
+              indexOfKLV = i;
+          }
+        }
+        for (let i = indexOfPPK; i < linesPPK.length; i++) {
+          const ppkTime = linesPPK[i] && addDifferenceTime(linesPPK[i][0], ppkTimeDifference);
+          let difference = linesPPK[i] && timeDifference(ppkTime, timeOfFile);
+          if (difference < minDifferencePPK) {
+            minDifferencePPK = difference;
+            indexOfPPK = i;
+          }
+        }
+        for (let i = indexOfLog; i < linesLog.length; i++) {
+          const logTime = linesLog[i] && addDifferenceTime(linesLog[i][0], 0);
+          let difference = linesLog[i] && timeDifference(logTime, timeOfFile);
+          if (difference < minDifferenceLog) {
+              minDifferenceLog = difference;
+              indexOfLog = i;
+          }
+        }
+        const contentMetadataKLV = metadataOutputFormat.map(item => {
+            if(item === 'precisionTimeStamp') {
+              return linesKLV[indexOfKLV][0] && addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference) || '0';
+            }
+            if(item === 'platformTailNumber' || item === 'platformDesignation') {
+              return droneName;
+            }
+            if(item === 'platformSpeed') {
+              return linesLog[indexOfLog] && linesLog[indexOfLog][linesLog[0].includes('MSL') ? 7: 5] || '0' 
+            }
 
-      const fileKlv = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}.txt`;
-      const filePpk = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}(PPK).txt`;
-      const droneDefaultValue = DRONE_DEFAULT_VALUES[droneName];
-      fs.writeFileSync(path.join(outDir, outputMetaDir, fileKlv), 
-        (contentMetadataKLV.toString() + 
+            if(item ==='sensorTrueAltitude' && linesKLV[0].includes('MSL')) {
+              return linesKLV[indexOfKLV][9] || 'Null';
+            }
+            
+            return klvInputFormatUsed.indexOf(item) >= 0 ? linesKLV[indexOfKLV][klvInputFormatUsed.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+        });
+
+        const contentMetadataPPK = metadataOutputFormat.map(item => {
+            if(item === 'precisionTimeStamp') {
+              return linesKLV[indexOfKLV][0] && addDifferenceTime(linesKLV[indexOfKLV][0], klvTimeDifference) || '0';
+            }
+
+            if(['sensorLatitude','sensorLongitude', 'sensorTrueAltitude'].includes(item)) {
+                return PPKInputFormat.indexOf(item) >= 0 ? linesPPK[indexOfPPK][PPKInputFormat.indexOf(item)] || 'Null' : 'Null'
+            }
+            
+            if(item === 'platformTailNumber' || item === 'platformDesignation') {
+              return droneName;
+            }
+            if(item === 'platformSpeed') {
+              return linesLog[indexOfLog] && linesLog[indexOfLog][linesLog[0].includes('MSL') ? 7: 5] || '0' 
+            }
+            return klvInputFormatUsed.indexOf(item) >= 0 ? linesKLV[indexOfKLV][klvInputFormatUsed.indexOf(item)].replace(/\0+$/, '') || 'Null' : 'Null'
+        });
+
+        const outputMetaDir = path.join(outputDir, PATH_STRING.meta)
+        if (!fs.existsSync(outDir+ outputMetaDir)) {
+            createDirectory(outputMetaDir)
+        }
+
+        const fileKlv = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}.txt`;
+        const filePpk = `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}(PPK).txt`;
+        const droneDefaultValue = DRONE_DEFAULT_VALUES[droneName];
+        fs.writeFileSync(path.join(outDir, outputMetaDir, fileKlv), 
+          (contentMetadataKLV.toString() + 
+          `,${droneDefaultValue.INS_PITCH_ALIGNMENT_VISABLE},${droneDefaultValue.PX2CB_X_VISABLE},${droneDefaultValue.PX2CB_Y_VISABLE},${droneDefaultValue.PX2CB_Z_VISABLE}`)
+          .replace( /[\r\n]+/gm, "" ));
+
+        fs.writeFileSync(path.join(outDir, outputMetaDir, filePpk),
+        (contentMetadataPPK.toString() + 
         `,${droneDefaultValue.INS_PITCH_ALIGNMENT_VISABLE},${droneDefaultValue.PX2CB_X_VISABLE},${droneDefaultValue.PX2CB_Y_VISABLE},${droneDefaultValue.PX2CB_Z_VISABLE}`)
         .replace( /[\r\n]+/gm, "" ));
+        console.log('indexOfKLV', indexOfKLV, 'indexOfPPK', indexOfPPK, 'indexOfLog', indexOfLog)
 
-      fs.writeFileSync(path.join(outDir, outputMetaDir, filePpk),
-      (contentMetadataPPK.toString() + 
-      `,${droneDefaultValue.INS_PITCH_ALIGNMENT_VISABLE},${droneDefaultValue.PX2CB_X_VISABLE},${droneDefaultValue.PX2CB_Y_VISABLE},${droneDefaultValue.PX2CB_Z_VISABLE}`)
-      .replace( /[\r\n]+/gm, "" ));
-      console.log('indexOfKLV', indexOfKLV, 'indexOfPPK', indexOfPPK, 'indexOfLog', indexOfLog)
-
-      // Process each line and join them with '\n' to form the new content
-      const newContent = lines.map(line => processDETLine(line)).join('\n');
-      const outputDETPath = path.join(outputDir, PATH_STRING.det);
-      if (!fs.existsSync(outDir+outputDETPath)) {
-          createDirectory(outputDETPath)
-      }
-
+        // Process each line and join them with '\n' to form the new content
+        const newContent = lines.map(line => processDETLine(line)).join('\n');
+        const outputDETPath = path.join(outputDir, PATH_STRING.det);
+        if (!fs.existsSync(outDir+outputDETPath)) {
+            createDirectory(outputDETPath)
+        }
+        fs.writeFileSync(path.join(outDir, outputDETPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}.txt`), newContent);
+      
       const outputDETVisualizedPath = path.join(outputDir, PATH_STRING.det_visualized);
       if (!fs.existsSync(outDir + outputDETVisualizedPath)) {
           createDirectory(outputDETVisualizedPath)
       }
-      const imgURL = path.join(path.join(outDir, outputDir, 'Images_Temp'), fileInput);
+
+      imgURL = path.join(path.join(outDir, outputDir, 'Images_Temp'), fileInput);
 
       const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}.jpg`);
 
       await handleImageDET(imgURL, pathOutImg, lines)
-      fs.writeFileSync(path.join(outDir, outputDETPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}.txt`), newContent);
-
       //return MOT content file
       const newContentMOT = lines.map(line => processMOTLine(line, convertNumberToAnyDigit(index, 5)));
       resolve([newContentMOT, imgURL]);
+      return;
+    }
+     resolve(['', ''])
     } catch (error) {
       reject(error);
     }
   });
 }
 
-let labelClipDatas = [];
 function convertInputToDETMOT(date, drone, sortie, clip, droneDir, unplanned) {
   return new Promise(async (resolve, reject) => {
     try {
@@ -244,17 +255,15 @@ function convertInputToDETMOT(date, drone, sortie, clip, droneDir, unplanned) {
       const clipsSplitFiles = fs.readdirSync(path.join(clipDir, 'videos'));
 
       if(clipsSplitFiles.length > 0) {
+
         for(const file of clipsSplitFiles) {
           const videoUrl = path.join(clipDir, 'videos', file);
           const fileName = file.split('.')[0];
+          console.log('start convert video ', fileName, ' to frame');
           await convertToFramesDET(videoUrl, imagesPath, 50, fileName);
           console.log('convert To Frames done.', fileName);
         }
       }
-
-      //const detFolderFiles = fs.readdirSync(path.join(clipDir, 'xml'))
-      // Filter out only .txt files
-      //const detFiles = detFolderFiles.filter(file => path.extname(file).toLowerCase() === '.txt').sort((a, b) => a - b);
       const fileXMLURL = path.join(clipDir, 'xml', sortie.split('_').join('')+'_0'+drone+'_'+clip*1+'_'+date+'.csv');
       console.log('clipDir', fileXMLURL)
 
@@ -279,6 +288,7 @@ function convertInputToDETMOT(date, drone, sortie, clip, droneDir, unplanned) {
       const fileKLVContent = fs.readFileSync(klvFileUrl, 'utf8');
       linesKLV = fileKLVContent.trim().split('\n').map(line => line.split(',')).sort((a, b) => a[0] - b[0]);
       klvInputFormatUsed = linesKLV[0].includes('MSL') ?  KLVInputFormatMSL : KLVInputFormat;
+      isLabeled = false;
       for (let index = 0; index < imagesFiles.length; index = index + 5) {
         const file = imagesFiles[index];
         const [contentLine, imgURL] = await convertTxtToDet(date, drone, clip, file, sortie, index, unplanned );
