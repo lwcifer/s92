@@ -10,7 +10,7 @@ import { DOMParser } from "xmldom";
 
 import { DETInputFormat, KLVInputFormat, PPKInputFormat } from './input_format_constants.js';
 import { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } from './output_format_constants.js';
-import { getFileName, getFixedColor, mergeArrays, addDifferenceTime, getStartFrame, addDifferenceTimeGetTime, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, convertNumberToAnyDigit} from './util.js';
+import { getFileName, getFixedColor, mergeArrays, addDifferenceTime, getStartFrame, checkPlanned, addDifferenceTimeGetTime, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, convertNumberToAnyDigit} from './util.js';
 import { PATH_STRING, categories, DRONE_DEFAULT_VALUES } from './contanst.js';
 import { drawText, drawBoundingBox, handleImageDET, handleImageMOT, handleImageMoving } from './images.js';
 import { mergeXML } from './merge.js';
@@ -417,11 +417,8 @@ async function MCMOTToFrames(date = '240427', sortie, clip = '0007', drone = '3'
     // if (!fs.existsSync(outputDirReal)) {
     //   createDirectory(outputDirReal)
     // }
-    const txtFile = path.join(inputDir, date, 'MCMOT', sortie, clip, drone, 'range.txt')
-    const txtFileContent = fs.readFileSync(txtFile, 'utf8');
-    const objs = txtFileContent.trim().split(',');
 
-    await convertToFramesMCMOT(videoUrl, path.join(inputDir, outputDir), fps, +objs[0], +objs[1] + 1);
+    await convertToFramesMCMOT(videoUrl, path.join(inputDir, outputDir), fps);
     console.log('convert To MCMOTToFrames done', outputDir);
 }
 
@@ -439,6 +436,8 @@ function contentMCMOT(date, sortie, clip, segments) {
     });
 
     let xxx = []
+    const compositeKey = {}
+    const compositeError = []
     if(filesMCMOTDrones.length > 0) {
         filesMCMOTDrones.forEach(drone => {
             const txtFile = path.join(inputDir, date, 'MCMOT', sortie, clip, drone, 'range.txt')
@@ -475,10 +474,10 @@ function contentMCMOT(date, sortie, clip, segments) {
             speedData.shift();
             ppk.shift();
 
-            // const rootTime = new Date(lines[startFrame].split(',')[0]).getTime();
+            const rootTime = new Date(lines[startFrame].split(',')[0]).getTime();
             // lines = lines.slice(objs[0], +objs[1] + 1)
-            console.log('lines.length', lines.length)
-            if(segments[drone]) xxx = mergeArrays(segments[drone], lines, ppk, speedData, beacon, drone, 'rootTime', fps, klvTimeDifference, ppkTimeDifference, 0,0, startFrame, startIndex)
+            // console.log('lines.length', lines.length)
+            if(segments[drone]) xxx = mergeArrays(segments[drone], lines, ppk, speedData, beacon, drone, rootTime, startFrame, startIndex, fps)
 
             // console.log('contentMCMOT', xxx[0])
         })
@@ -493,11 +492,21 @@ function contentMCMOT(date, sortie, clip, segments) {
             const drone = xxx[i].drone;
             const startFrame = xxx[i].startFrame;
             const startIndex = xxx[i].startIndex;
-            //add data to targetMain
             let nem = valueToText(values[1])
             nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
-            let box = parseInt(values[2]) + 1
+            let box = `${parseInt(values[2]) + 1}${drone}${parseInt(clip)}`
             const frameIndex = (parseInt(values[0]) - startFrame)/5 + startIndex
+            const isPlanned = checkPlanned(nem)
+            // Check duplicate keys
+            const key = `${box}_${drone}_${frameIndex}`
+            if(compositeKey[key]) {
+                console.error('ERROR compositeKey: ', `clip ${clip}_drone ${drone}_box ${box}_frameIndex ${values[0]}`);
+                compositeError.push(`clip ${clip}, drone ${drone}, box ${box}, frameIndex ${values[0]}`);
+                continue;
+            }
+            compositeKey[key] = 1
+
+            //add data to targetMain
             if (!ck[values[1] + values[2]] ) {
                 let category = '0'
                 switch (valueToText(values[1]).split('_')[0]) {
@@ -511,7 +520,7 @@ function contentMCMOT(date, sortie, clip, segments) {
                 resultTargetMain += '\t<object>\n';
                 resultTargetMain += '\t\t<target_id_global>' + nem + '</target_id_global>\n';
                 resultTargetMain += '\t\t<object_category>' + category + '</object_category>\n';
-                resultTargetMain += '\t\t<object_subcategory>' + (nem == 'car_1' ? '0' : '1') + '</object_subcategory>\n';
+                resultTargetMain += '\t\t<object_subcategory>' + (isPlanned ? '0' : '1') + '</object_subcategory>\n';
                 resultTargetMain += '\t\t<box_id>' + box + '</box_id>\n';
                 resultTargetMain += '\t</object>\n';
                 ck[values[1] + values[2]] = 1
@@ -522,9 +531,9 @@ function contentMCMOT(date, sortie, clip, segments) {
             resultTargetPos += '\t\t<target_id_global>' + nem + '</target_id_global>\n';
             resultTargetPos += '\t\t<avs_id>' + valueToText(drone) + '</avs_id>\n';
             resultTargetPos += '\t\t<frame_index>' + frameIndex + '</frame_index>\n';
-            resultTargetPos += '\t\t<target_pos_lat>' + (nem == 'car_1' ? valueToText(beacon[2]) : 'null') + '</target_pos_lat>\n';
-            resultTargetPos += '\t\t<target_pos_long>' + (nem == 'car_1' ? valueToText(beacon[3]) : 'null') + '</target_pos_long>\n';
-            resultTargetPos += '\t\t<target_pos_alt>' + (nem == 'car_1' ? valueToText(beacon[6]) : 'null') + '</target_pos_alt>\n';
+            resultTargetPos += '\t\t<target_pos_lat>' + (isPlanned ? valueToText(beacon[2]) : 'null') + '</target_pos_lat>\n';
+            resultTargetPos += '\t\t<target_pos_long>' + (isPlanned ? valueToText(beacon[3]) : 'null') + '</target_pos_long>\n';
+            resultTargetPos += '\t\t<target_pos_alt>' + (isPlanned ? valueToText(beacon[6]) : 'null') + '</target_pos_alt>\n';
             resultTargetPos += '\t</object>\n';
 
             //add data to targetBox
@@ -533,24 +542,24 @@ function contentMCMOT(date, sortie, clip, segments) {
             let bwidth = valueToText(values[5])
             let bheight = valueToText(values[6])
             if (cx < 0) {
-                const diff = 0 - cx;
-                cx = cx + diff/2
-                bwidth -= diff
+                cx = (-values[3] + values[5])/2
+                bwidth = cx * 2
             }
             if (cy < 0) {
-                const diff = 0 - cy;
-                cy = cy + diff/2
-                bheight -= diff
+                console.log('cyyyyyyyy', cy, values[4])
+                cy = (-values[4]+ values[6])/2
+                bheight = cy * 2
+                console.log('cyyyyyyyy2222222', cy)
             }
             if (cx > 1280) {
-                const diff = 1280 - cx;
-                cx = cx - diff/2
-                bwidth -= diff
+                cx = (+values[3] + 1280)/2
+                bwidth = 1280 - values[3]
             }
             if (cy > 720) {
-                const diff = 720 - cy;
-                cy = cy - diff/2
-                bheight -= diff
+                console.log('cyyyyyyyy', cy, values[4])
+                cy = (+values[4] + 720)/2
+                bheight = 720 - values[4]
+                console.log('cyyyyyyyy2222222', cy)
             }
 
             const isMSL = klv.length === 31 
@@ -562,9 +571,6 @@ function contentMCMOT(date, sortie, clip, segments) {
             resultTargetBox += '\t\t<bbox_cy>' + cy + '</bbox_cy>\n';
             resultTargetBox += '\t\t<bbox_width>' + bwidth + '</bbox_width>\n';
             resultTargetBox += '\t\t<bbox_height>' + bheight + '</bbox_height>\n';
-            // resultTargetBox += '\t\t<score>' + valueToText(values[6]) + '</score>\n';
-            // resultTargetBox += '\t\t<truncation>' + valueToText(values[7]) + '</truncation>\n';
-            // resultTargetBox += '\t\t<occlusion>' + valueToText(values[8]) + '</occlusion>\n';
             resultTargetBox += '\t\t<precision_time_stamp>' + valueToText(klv[0]) + '</precision_time_stamp>\n';
             resultTargetBox += '\t\t<platform_tail_number>' + drone + '</platform_tail_number>\n';
             resultTargetBox += '\t\t<platform_heading_angle>' + valueToText(klv[1]) + '</platform_heading_angle>\n';
@@ -592,9 +598,7 @@ function contentMCMOT(date, sortie, clip, segments) {
             resultTargetBox += '\t\t<offset_corner_longitude_point_3>' + valueToText(klv[isMSL ? 24 : 22]) + '</offset_corner_longitude_point_3>\n';
             resultTargetBox += '\t\t<offset_corner_latitude_point_4>' + valueToText(klv[isMSL ? 25 : 23]) + '</offset_corner_latitude_point_4>\n';
             resultTargetBox += '\t\t<offset_corner_longitude_point_4>' + valueToText(klv[isMSL ? 26 : 24]) + '</offset_corner_longitude_point_4>\n';
-            resultTargetBox += '\t\t<plaftform_speed>' + valueToText(speed[isMSL ? 7 : 5]) + '</plaftform_speed>\n';
-            // resultTargetBox += '\t\t<sensor_exposure_time>' + valueToText(klv[-1]) + '</sensor_exposure_time>\n';
-            // resultTargetBox += '\t\t<platform-cam_rotation_matrix>' + valueToText(klv[-1]) + '</pla9tform-cam_rotation_matrix>\n';   
+            resultTargetBox += '\t\t<plaftform_speed>' + valueToText(speed[isMSL ? 7 : 5]) + '</plaftform_speed>\n'; 
             resultTargetBox += '\t\t<ins_pitch_alignment_day>' + valueToText(klv[isMSL ? 27 : 25]) + '</ins_pitch_alignment_day>\n';
             resultTargetBox += '\t\t<px2cb_x_day>' + valueToText(klv[isMSL ? 28 : 26]) + '</px2cb_x_day>\n';
             resultTargetBox += '\t\t<px2cb_y_day>' + valueToText(klv[isMSL ? 29 : 27]) + '</px2cb_y_day>\n';
@@ -610,9 +614,6 @@ function contentMCMOT(date, sortie, clip, segments) {
             resultTargetBoxPPK += '\t\t<bbox_cy>' + cy + '</bbox_cy>\n';
             resultTargetBoxPPK += '\t\t<bbox_width>' + bwidth + '</bbox_width>\n';
             resultTargetBoxPPK += '\t\t<bbox_height>' + bheight + '</bbox_height>\n';
-            // resultTargetBoxPPK += '\t\t<score>' + valueToText(values[6]) + '</score>\n';
-            // resultTargetBoxPPK += '\t\t<truncation>' + valueToText(values[7]) + '</truncation>\n';
-            // resultTargetBoxPPK += '\t\t<occlusion>' + valueToText(values[8]) + '</occlusion>\n';
             resultTargetBoxPPK += '\t\t<precision_time_stamp>' + valueToText(klv[0]) + '</precision_time_stamp>\n';
             resultTargetBoxPPK += '\t\t<platform_tail_number>' + drone + '</platform_tail_number>\n';
             resultTargetBoxPPK += '\t\t<platform_heading_angle>' + valueToText(klv[1]) + '</platform_heading_angle>\n';
@@ -640,9 +641,7 @@ function contentMCMOT(date, sortie, clip, segments) {
             resultTargetBoxPPK += '\t\t<offset_corner_longitude_point_3>' + valueToText(klv[isMSL ? 24 : 22]) + '</offset_corner_longitude_point_3>\n';
             resultTargetBoxPPK += '\t\t<offset_corner_latitude_point_4>' + valueToText(klv[isMSL ? 25 : 23]) + '</offset_corner_latitude_point_4>\n';
             resultTargetBoxPPK += '\t\t<offset_corner_longitude_point_4>' + valueToText(klv[isMSL ? 26 : 24]) + '</offset_corner_longitude_point_4>\n';
-            resultTargetBoxPPK += '\t\t<plaftform_speed>' + valueToText(speed[isMSL ? 7 : 5]) + '</plaftform_speed>\n';
-            // resultTargetBoxPPK += '\t\t<sensor_exposure_time>' + valueToText(klv[-1]) + '</sensor_exposure_time>\n';
-            // resultTargetBoxPPK += '\t\t<platform-cam_rotation_matrix>' + valueToText(klv[-1]) + '</pla9tform-cam_rotation_matrix>\n';   
+            resultTargetBoxPPK += '\t\t<plaftform_speed>' + valueToText(speed[isMSL ? 7 : 5]) + '</plaftform_speed>\n'; 
             resultTargetBoxPPK += '\t\t<ins_pitch_alignment_day>' + valueToText(klv[isMSL ? 27 : 25]) + '</ins_pitch_alignment_day>\n';
             resultTargetBoxPPK += '\t\t<px2cb_x_day>' + valueToText(klv[isMSL ? 28 : 26]) + '</px2cb_x_day>\n';
             resultTargetBoxPPK += '\t\t<px2cb_y_day>' + valueToText(klv[isMSL ? 29 : 27]) + '</px2cb_y_day>\n';
@@ -655,6 +654,7 @@ function contentMCMOT(date, sortie, clip, segments) {
     resultTargetBoxPPK += '</root>';
     resultTargetMain += '</root>';
     resultTargetPos += '</root>';
+    console.log('compositeError: ', compositeError)
     return [resultTargetBox, resultTargetMain, resultTargetPos, resultTargetBoxPPK];
 }
 
@@ -740,32 +740,33 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                         const txtFileContent = fs.readFileSync(txtFile, 'utf8');
                         objs = txtFileContent.trim().split('\n');
                         fileData[drone] = [...fileData[drone], ...objs];
-                        if (mode === '5') {
-                            await handleImageBoxMCMOT(imgURL, pathOutImg, objs, droneImgFiles.length);
-    
-                            let pathOutImgImg = path.join(outDir, droneOutDir, 'Images');
-                            if (!fs.existsSync(pathOutImgImg)) {
-                                const pa = path.join(droneOutDir, 'Images')
-                                createDirectory(pa)
-                            }
-                            // console.log('fileName:', fileName)
-                            // console.log('startFrame:', startFrame)
-                            // console.log('imgName:', imgName)
-                            pathOutImgImg = path.join(pathOutImgImg,`${date}_${'0001'}_${drone}_${imgName.slice(-digitFileName)}.jpg`);
-    
-                            await toMCMOTImages(imgURL, pathOutImgImg, objs);
-                        }
+                        
                     } else {
-                        console.log('existsSync:', clip, drone, txtFile)
+                        // console.log('existsSync:', clip, drone, txtFile)
+                    }
+
+                    if (mode === '5') {
+                        await handleImageBoxMCMOT(imgURL, pathOutImg, objs, droneImgFiles.length);
+
+                        let pathOutImgImg = path.join(outDir, droneOutDir, 'Images');
+                        if (!fs.existsSync(pathOutImgImg)) {
+                            const pa = path.join(droneOutDir, 'Images')
+                            createDirectory(pa)
+                        }
+                        pathOutImgImg = path.join(pathOutImgImg,`${date}_${'0001'}_${drone}_${imgName.slice(-digitFileName)}.jpg`);
+
+                        await toMCMOTImages(imgURL, pathOutImgImg, objs);
                     }
                 };
                 
                 const processFiles = async () => {
+                    console.log("Đang xử lý clip", clip, 'drone', drone);
                     const promises = [];
                     for (let i = 0; i < droneImgFiles.length; i += 5) {
                         const img = droneImgFiles[i];
                         if (mode == '2') {
-                            promises.push(processFile(img, i));
+                            processFile(img, i);
+                            // promises.push(limit1(() => processFile(img, i)));
                         } else {
                             promises.push(limit(() => processFile(img, i)));
                         }
@@ -792,7 +793,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                         await Promise.all([
                             exportXmlToFile(contentTargetBox, `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_box}/${date}_${clip}_${drone}.xml`),
                             exportXmlToFile(contentTargetBoxPPK,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_box_ppk}/${date}_${clip}(PPK)_${drone}.xml`),
-                            exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_main}/${date}_${clip}.xml`),
+                            exportXmlToFile(contentTargetMain,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_main}/${date}_${clip}_${drone}.xml`),
                             exportXmlToFile(contentTargetPos,  `${outDir}/${date}/${PATH_STRING.train}/${PATH_STRING.mcmot}/${sortie}/${'0001/Pre'}/${PATH_STRING.mcmot_target_pos}/${date}_${clip}_${drone}.xml`)
                         ])
                     };
@@ -831,29 +832,25 @@ async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
                     let cc = 0
                     objects.forEach((object, index) => {
                         object = object.split(',')
-                        let xcenter = +object[3]*1 + object[5]/2;
-                        let ycenter = object[4]*1 + object[6]/2;
+                        let xcenter = +object[3] + object[5]/2;
+                        let ycenter = +object[4] + object[6]/2;
                         let width = object[5];
                         let height = object[6];
                         if (xcenter < 0) {
-                            const diff = 0 - xcenter;
-                            xcenter = xcenter + diff/2
-                            width -= diff
+                            xcenter = (-object[3] + object[5])/2
+                            width = xcenter * 2
                         }
                         if (ycenter < 0) {
-                            const diff = 0 - ycenter;
-                            ycenter = ycenter + diff/2
-                            height -= diff
+                            ycenter = (-object[4] + object[6])/2
+                            height = ycenter * 2
                         }
                         if (xcenter > 1280) {
-                            const diff = 1280 - xcenter;
-                            xcenter = xcenter - diff/2
-                            width -= diff
+                            xcenter = (+object[3] + 1280)/2
+                            width = 1280 - object[3]
                         }
                         if (ycenter > 720) {
-                            const diff = 720 - ycenter;
-                            ycenter = ycenter - diff/2
-                            height -= diff
+                            ycenter = (+object[4] + 720)/2
+                            height = 720 - object[4]
                         }
 
                         let nem = object[1]
@@ -900,7 +897,7 @@ function convertToFramesDET(inputVideo, outputFramesDir, fps, fileName, startFra
   });
 }
 
-function convertToFramesMCMOT(inputVideo, outputFramesDir, fps, fileName, startFrame, endFrame) {
+function convertToFramesMCMOT(inputVideo, outputFramesDir, fps) {
     return new Promise((resolve, reject) => {
       //   console.log('fileName', fileName)
         exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} -qscale:v 2 -threads 0 ${outputFramesDir}/%05d.jpg`, (error, stdout, stderr) => {

@@ -58,9 +58,9 @@ function mergeXML (folderDir, fileName) {
 
             let files = fs.readdirSync(folderPath).filter(file => file.endsWith('.xml'));
             files = files.sort((a, b) => a.localeCompare(b));
-            if (fPath == 'Annotation MCMOT TargetMain') {
-                files = getLargestFile(folderPath)
-            }
+            // if (fPath == 'Annotation MCMOT TargetMain') {
+            //     files = getLargestFile(folderPath)
+            // }
             for (const file of files) {
                 const filePath = path.join(folderPath, file);
                 const data = fs.readFileSync(filePath, 'utf8');
@@ -82,5 +82,7 @@ function mergeXML (folderDir, fileName) {
     });
 }
 
+// mergeXML('D:/FTP07/output_0601_A/240427/Train/MCMOT/07/0001/', '240427_0001')
+// mergeXML('D:/FTP08/output_0601_A/240429/Train/MCMOT/08/0001/', '240429_0001')
 
 export {mergeXML}

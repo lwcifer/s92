@@ -97,14 +97,6 @@ function timeDifference(t1, t2) {
     return Math.abs(new Date(t1) - new Date(t2));
 }
 
-function uFrameIndexToTime(startTime, index, fps) {
-    const timestamp = (index / fps) * 1000
-    const date = new Date(startTime)
-    const timestampFromDateString = date.getTime() + timestamp
-
-    return timestampFromDateString
-}
-
 /***/
 function exportXmlToFile(xmlContent, filename) {
     return new Promise((resolve, reject) => {
@@ -199,8 +191,15 @@ function addDifferenceTimeGetTime(root, difference) {
 }
 
 /**/
+function uFrameIndexToTime(startTime, index, fps) {
+    const timestamp = (index / fps) * 1000
+    const date = new Date(startTime)
+    const timestampFromDateString = date.getTime() + timestamp
 
-function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvTimeDifference, ppkTimeDifference, speedTimeDifference, beaconTimeDifference, startFrame, startIndex) {
+    return timestampFromDateString
+}
+
+function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, startFrame, startIndex, fps) {
     // Duyệt qua từng phần tử trong array1
     return array1.map(item1 => {
         let closestItemKLV = null;
@@ -216,26 +215,29 @@ function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvT
         let timespeed = '';
         let timebeacon = '';
 
-        const g1 = new Date(klv[item1.split(',')[0]].split(',')[0]).getTime();
-        // const g1 = uFrameIndexToTime(item1.split(',')[0], rootTime, fps);
+        const frameSeg = item1.split(',')[0];
+        const x = (frameSeg - startFrame)
+        // const g1 = new Date(klv[frameSeg].split(',')[0]).getTime();
+        const g1 = uFrameIndexToTime(rootTime, x, fps);
+        // console.log('item1 ',item1.split(',')[0], ' x', x, new Date(rootTime), '  ', new Date(g1), g1 - rootTime)
 
         // Tìm phần tử có thời gian gần đúng nhất trong klv
-        closestItemKLV = extraDataMCMOT(klv[item1.split(',')[0]], drone);
-        // klv.forEach(item2 => {
-        //     if (item2 && item2.trim().length > 0) {
-        //         timeklv = addDifferenceTimeGetTime(item2.split(',')[0], klvTimeDifference);
-        //         const timeDifference = Math.abs(g1 - timeklv);
-        //         if (timeDifference < minTimeDifferenceKLV) {
-        //             minTimeDifferenceKLV = timeDifference;
-        //             closestItemKLV = extraDataMCMOT(item2, drone);
-        //         }
-        //     }
-        // });
+        // closestItemKLV = extraDataMCMOT(klv[item1.split(',')[0]], drone);
+        klv.forEach(item2 => {
+            if (item2 && item2.trim().length > 0) {
+                timeklv = addDifferenceTimeGetTime(item2.split(',')[0], 0);
+                const timeDifference = Math.abs(g1 - timeklv);
+                if (timeDifference < minTimeDifferenceKLV) {
+                    minTimeDifferenceKLV = timeDifference;
+                    closestItemKLV = extraDataMCMOT(item2, drone);
+                }
+            }
+        });
 
         // Tìm phần tử có thời gian gần đúng nhất trong ppk
         ppk.forEach(item2 => {
             if (item2 && item2.trim().length > 0) {
-                timeppk = addDifferenceTimeGetTime(item2.split(',')[0], ppkTimeDifference);
+                timeppk = addDifferenceTimeGetTime(item2.split(',')[0], 0);
                 const timeDifference = Math.abs(g1 - timeppk);
                 if (timeDifference < minTimeDifferencePPK) {
                     minTimeDifferencePPK = timeDifference;
@@ -247,7 +249,7 @@ function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvT
         // Tìm phần tử có thời gian gần đúng nhất trong speed
         speed.forEach(item2 => {
             if (item2 && item2.trim().length > 0) {
-                timespeed = addDifferenceTimeGetTime(item2.split(',')[0], speedTimeDifference);
+                timespeed = addDifferenceTimeGetTime(item2.split(',')[0], 0);
                 const timeDifference = Math.abs(g1 - timespeed);
                 if (timeDifference < minTimeDifferenceSpeed) {
                     minTimeDifferenceSpeed = timeDifference;
@@ -259,7 +261,7 @@ function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvT
         // Tìm phần tử có thời gian gần đúng nhất trong beacon
         beacon.forEach(item2 => {
             if (item2 && item2.trim().length > 0) {
-                timebeacon = addDifferenceTimeGetTime(item2.split(',')[0], beaconTimeDifference);
+                timebeacon = addDifferenceTimeGetTime(item2.split(',')[0], 0);
                 const timeDifference = Math.abs(g1 - timebeacon);
                 if (timeDifference < minTimeDifferenceBeacon) {
                     minTimeDifferenceBeacon = timeDifference;
@@ -282,6 +284,9 @@ function mergeArrays(array1, klv, ppk, speed, beacon, drone, rootTime, fps, klvT
     });
 }
 
+function checkPlanned(name) {
+    return name == 'car_0' || name == 'car_1' || name == 'car_2'
+}
 
 function sortPromax(arr, start, timeDiff, check) {
     let res = [];
@@ -355,6 +360,6 @@ function convertNumberToAnyDigit (number, digit) {
     return number.toString().padStart(digit, '0');
 }
 
-export { convertNumberToAnyDigit, getStartFrame, getFileName, mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
+export { checkPlanned, convertNumberToAnyDigit, getStartFrame, getFileName, mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
 
 
