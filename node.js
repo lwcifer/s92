@@ -12,7 +12,7 @@ import { DETInputFormat, KLVInputFormat, PPKInputFormat } from './input_format_c
 import { DETOutputFormat, MOTOutputFormat, metadataOutputFormat } from './output_format_constants.js';
 import { getFileName, getFixedColor, mergeArrays, addDifferenceTime, getStartFrame, checkPlanned, addDifferenceTimeGetTime, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, convertNumberToAnyDigit} from './util.js';
 import { PATH_STRING, categories, DRONE_DEFAULT_VALUES } from './contanst.js';
-import { drawText, drawBoundingBox, handleImageDET, handleImageMOT, handleImageMoving } from './images.js';
+import { drawText, drawTextMCMOT, drawBoundingBox, handleImageDET, handleImageMOT, handleImageMoving } from './images.js';
 import { mergeXML } from './merge.js';
 
 
@@ -537,29 +537,33 @@ function contentMCMOT(date, sortie, clip, segments) {
             resultTargetPos += '\t</object>\n';
 
             //add data to targetBox
-            let cx = +values[3] + values[5]/2
-            let cy = +values[4] + values[6]/2
-            let bwidth = valueToText(values[5])
-            let bheight = valueToText(values[6])
-            if (cx < 0) {
-                cx = (-values[3] + values[5])/2
+            let minx = parseInt(values[3])
+            let miny = parseInt(values[4])
+            let bwidth = parseInt(values[5])
+            let bheight = parseInt(values[6])
+            let xmax = minx + bwidth;
+            let ymax = miny + bheight;
+            let cx = minx + bwidth/2
+            let cy = miny + bheight/2
+            if (minx < 0) {
+                cx = (minx + bwidth)/2
                 bwidth = cx * 2
+                console.log('cxxxxxxxxxx', values[0], cx)
             }
-            if (cy < 0) {
-                console.log('cyyyyyyyy', cy, values[4])
-                cy = (-values[4]+ values[6])/2
+            if (miny < 0) {
+                cy = (miny +  bheight)/2
                 bheight = cy * 2
-                console.log('cyyyyyyyy2222222', cy)
+                console.log('cyyyyyyyyyy', values[0],  cy)
             }
-            if (cx > 1280) {
-                cx = (+values[3] + 1280)/2
-                bwidth = 1280 - values[3]
+            if (xmax > 1280) {
+                cx = (minx + 1280)/2
+                bwidth = 1280 - minx
+                console.log('cxxxxxxxxxx', values[0], cx)
             }
-            if (cy > 720) {
-                console.log('cyyyyyyyy', cy, values[4])
-                cy = (+values[4] + 720)/2
-                bheight = 720 - values[4]
-                console.log('cyyyyyyyy2222222', cy)
+            if (ymax > 720) {
+                cy = (miny + 720)/2
+                bheight = 720 - miny
+                console.log('cyyyyyyyyyy', values[0], cy)
             }
 
             const isMSL = klv.length === 31 
@@ -832,32 +836,40 @@ async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
                     let cc = 0
                     objects.forEach((object, index) => {
                         object = object.split(',')
-                        let xcenter = +object[3] + object[5]/2;
-                        let ycenter = +object[4] + object[6]/2;
-                        let width = object[5];
-                        let height = object[6];
-                        if (xcenter < 0) {
-                            xcenter = (-object[3] + object[5])/2
+                        const minx = parseInt(object[3])
+                        const miny = parseInt(object[4])
+                        let width = parseInt(object[5]);
+                        let height = parseInt(object[6]);
+                        let xmax = minx + width;
+                        let ymax = miny + height;
+                        let xcenter = minx + width/2;
+                        let ycenter = miny + height/2;
+                        if (minx < 0) {
+                            xcenter = (minx + width)/2
                             width = xcenter * 2
+                            console.log(object[3], 'xcenter', xcenter)
                         }
-                        if (ycenter < 0) {
-                            ycenter = (-object[4] + object[6])/2
+                        if (miny < 0) {
+                            ycenter = (miny + height)/2
                             height = ycenter * 2
+                            console.log(object[4], 'ycenter', ycenter)
                         }
-                        if (xcenter > 1280) {
-                            xcenter = (+object[3] + 1280)/2
-                            width = 1280 - object[3]
+                        if (xmax > 1280) {
+                            xcenter = (minx + 1280)/2
+                            width = 1280 - minx
+                            console.log(object[3], 'xcenter', xcenter)
                         }
-                        if (ycenter > 720) {
-                            ycenter = (+object[4] + 720)/2
-                            height = 720 - object[4]
+                        if (ymax > 720) {
+                            ycenter = (miny + 720)/2
+                            height = 720 - miny
+                            console.log(object[4], 'ycenter', ycenter)
                         }
 
                         let nem = object[1]
                         nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
                         const boxid = object[2]
                         const color = getFixedColor(nem)
-                        drawText(ctx, nem, xcenter - width/2 + 2, ycenter - height/2 - 5);
+                        drawTextMCMOT(ctx, nem, xcenter, ycenter, minx, xmax, miny, ymax, width, height);
                         drawBoundingBox(ctx, xcenter, ycenter, width, height, color);
                     });
         

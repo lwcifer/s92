@@ -8,110 +8,131 @@ import { colors, categories } from './contanst.js';
 import { getFixedColor } from './util.js';
 
 function handleImageMoving(fileInput, outPath) {
-    
-    fs.readFile(fileInput, (err, data) => {
-        if (err) throw err;
 
-        loadImage(data).then((img) => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            // Save the canvas as an image file
-            const out = fs.createWriteStream(outPath);
-            const stream = canvas.createJPEGStream({quality: 0.9});
-            stream.pipe(out);
-            // out.on('finish', () => console.log('The image was saved.'));
-        }).catch((err) => {
-            console.error('Error loading image:', err);
-        });
+  fs.readFile(fileInput, (err, data) => {
+    if (err) throw err;
+
+    loadImage(data).then((img) => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      // Save the canvas as an image file
+      const out = fs.createWriteStream(outPath);
+      const stream = canvas.createJPEGStream({ quality: 0.9 });
+      stream.pipe(out);
+      // out.on('finish', () => console.log('The image was saved.'));
+    }).catch((err) => {
+      console.error('Error loading image:', err);
     });
+  });
 }
 
 // Draw text 
 function drawText(ctx, text, x, y, color = 'green') {
-    if (text && ctx) {
-        ctx.fillStyle = color;
-        ctx.font = 'normal 900 14px Arial';
-        if(y + 14 > 720) {
-          y = 720 - 14;
-        }
-        ctx.fillText(text, x, y);
+  if (text && ctx) {
+    ctx.fillStyle = color;
+    ctx.font = 'normal 900 14px Arial';
+    if (y + 14 > 720) {
+      y = 720 - 14;
     }
+    ctx.fillText(text, x, y);
+  }
+}
+
+function drawTextMCMOT(ctx, text, xcenter, ycenter, minx, xmax, miny, ymax, width, height, color = 'green') {
+  if (text && ctx) {
+    let x = xcenter - width / 2 + 2
+    let y = ycenter - height / 2 - 5
+    ctx.fillStyle = color;
+    ctx.font = 'normal 900 14px Arial';
+    
+    if (minx < 0) {
+      x = 0
+    }
+    if (xmax > 1280) {
+      x = x - (xmax - 1280) - 4
+    }
+    if (miny < 25) {
+      y = y + height + 20
+    }
+    
+    ctx.fillText(text, x, y);
+  }
 }
 
 // Function to draw a dot at a specific position
 function drawBoundingBox(ctx, centerX, centerY, width, height, color = 'green') {
-   const topLeftX = centerX - width / 2;
-   const topLeftY = centerY - height / 2;
+  const topLeftX = centerX - width / 2;
+  const topLeftY = centerY - height / 2;
 
-   // Draw the bounding box
-   ctx.strokeStyle = color;
-   ctx.lineWidth = 3;
-   ctx.strokeRect(topLeftX, topLeftY, width, height);
+  // Draw the bounding box
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(topLeftX, topLeftY, width, height);
 }
 
 // Function to handle image upload
 function handleImageDET(fileInput, pathDET, objects) {
   return new Promise((resolve, reject) => {
-      fs.readFile(fileInput, (err, data) => {
-          if (err) throw err;
+    fs.readFile(fileInput, (err, data) => {
+      if (err) throw err;
 
-          loadImage(data).then((img) => {
-              canvas.width = img.width;
-              canvas.height = img.height;
-              ctx.drawImage(img, 0, 0);
- 
-              objects.forEach(object => {
-                  // Split the object string and get the bounding box coordinates
-                  object = object.trim().split(',')
-                  let xmin = object[3]*1;
-                  let ymin = object[4]*1;
-                  let xcenter = object[3]*1 + object[5]*1 /2;
-                  let ycenter = object[4]*1 + object[6]*1 /2;
-                  let width = object[5]*1;
-                  let height = object[6]*1;
-                  let xmax = xcenter + width/2;
-                  let ymax = ycenter + height/2;
-                  
-                  // Check if the bounding box is out of the image
-                  if(xmax > 1280) {
-                    width = width - (xmax - 1280);
-                    xmax = 1280;
-                    xcenter = xmax - width/2;
-                  }
-                  if(ymax > 720) {
-                    height = height - (ymax - 720);
-                    ymax = 720;
-                    ycenter = ymax - height/2;
-                  }
-                  if(xmin < 0) {
-                    width = width - (0 - xmin);
-                    xmin = 0;
-                    xcenter = xmin + width/2;
-                  }
-                  if(ymin < 0) {
-                    height = height - (0 - ymin);
-                    ymin = 0;
-                    ycenter = ymin + height/2;
-                  }
+      loadImage(data).then((img) => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
 
-                  // Draw bounding box and text
-                  const objColor = getFixedColor(object[1]+ '_' + object[2]);
-                  drawText(ctx, categories[object[1].trim()], xcenter - width/2 + 2, ycenter - height/2 - 5);
-                  drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor); 
-              });
-  
-              // Save the canvas as an image file
-              const out = fs.createWriteStream(pathDET);
-              const stream = canvas.createJPEGStream({quality: 0.9});
-              stream.pipe(out);
-              out.on('finish', () => console.log('The image was saved.'));
-              resolve()
-          }).catch((err) => {
-              console.error('Error loading image:', err);
-              reject()
-          });
+        objects.forEach(object => {
+          // Split the object string and get the bounding box coordinates
+          object = object.trim().split(',')
+          let xmin = object[3] * 1;
+          let ymin = object[4] * 1;
+          let xcenter = object[3] * 1 + object[5] * 1 / 2;
+          let ycenter = object[4] * 1 + object[6] * 1 / 2;
+          let width = object[5] * 1;
+          let height = object[6] * 1;
+          let xmax = xcenter + width / 2;
+          let ymax = ycenter + height / 2;
+
+          // Check if the bounding box is out of the image
+          if (xmax > 1280) {
+            width = width - (xmax - 1280);
+            xmax = 1280;
+            xcenter = xmax - width / 2;
+          }
+          if (ymax > 720) {
+            height = height - (ymax - 720);
+            ymax = 720;
+            ycenter = ymax - height / 2;
+          }
+          if (xmin < 0) {
+            width = width - (0 - xmin);
+            xmin = 0;
+            xcenter = xmin + width / 2;
+          }
+          if (ymin < 0) {
+            height = height - (0 - ymin);
+            ymin = 0;
+            ycenter = ymin + height / 2;
+          }
+
+          // Draw bounding box and text
+          const objColor = getFixedColor(object[1] + '_' + object[2]);
+          drawText(ctx, categories[object[1].trim()], xcenter - width / 2 + 2, ycenter - height / 2 - 5);
+          drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor);
+        });
+
+        // Save the canvas as an image file
+        const out = fs.createWriteStream(pathDET);
+        const stream = canvas.createJPEGStream({ quality: 0.9 });
+        stream.pipe(out);
+        out.on('finish', () => console.log('The image was saved.'));
+        resolve()
+      }).catch((err) => {
+        console.error('Error loading image:', err);
+        reject()
       });
+    });
   })
 }
 
@@ -133,23 +154,23 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           ctx.drawImage(img, 0, 0);
           // Draw bounding box and text
           const objectsOfIndex = objects.filter(object => object[0] == frameNo);
-          if(objectsOfIndex.length > 0) {
+          if (objectsOfIndex.length > 0) {
             objectsOfIndex.forEach(object => {
-              let xcenter = object[2]*1;
-              let ycenter = object[3]*1;
-              let width = object[4]*1;
-              let height = object[5]*1;
+              let xcenter = object[2] * 1;
+              let ycenter = object[3] * 1;
+              let width = object[4] * 1;
+              let height = object[5] * 1;
 
               const objColor = getFixedColor(object[1]);
-              drawText(ctx,  object[1], (xcenter - 35) + width/2 , ycenter - height/2 - 5);
-              drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor); 
+              drawText(ctx, object[1], (xcenter - 35) + width / 2, ycenter - height / 2 - 5);
+              drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor);
             });
           }
 
           // Save the canvas as an image file
           const outPath = path.join(outputDir, `${index}.jpg`);
           const out = fs.createWriteStream(outPath);
-          const stream = canvas.createJPEGStream({quality: 0.9});
+          const stream = canvas.createJPEGStream({ quality: 0.9 });
           stream.pipe(out);
           out.on('finish', () => {
             console.log(`Image ${fileName} was saved.`);
@@ -207,7 +228,7 @@ function deletePngFiles(dirPath) {
       // Loop through all the files
       files.forEach((file) => {
         // Check if the file ends with .png
-        if (path.extname(file).toLowerCase() === '.png' || path.extname(file).toLowerCase() === '.jpg'){
+        if (path.extname(file).toLowerCase() === '.png' || path.extname(file).toLowerCase() === '.jpg') {
           // Construct the full path of the file
           const filePath = path.join(dirPath, file);
 
@@ -245,4 +266,4 @@ function renameFolderSync(oldPath, newPath) {
   });
 }
 
-export {drawText, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT}
+export { drawText, drawTextMCMOT, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT }
