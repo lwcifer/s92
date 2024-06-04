@@ -478,8 +478,6 @@ function contentMCMOT(date, sortie, clip, segments) {
             // lines = lines.slice(objs[0], +objs[1] + 1)
             // console.log('lines.length', lines.length)
             if(segments[drone]) xxx = mergeArrays(segments[drone], lines, ppk, speedData, beacon, drone, rootTime, startFrame, startIndex, fps)
-
-            // console.log('contentMCMOT', xxx[0])
         })
 
         const ck = {}

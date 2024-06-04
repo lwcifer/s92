@@ -1,783 +1,103 @@
 <style>
-hr {
-    border-style: dotted !important;
-    border-top: 0 !important;
+a {
+    color: #0d6efd !important;
+}
+h4 {
+    border-bottom: 1px solid #000;
+    display: block;
+    width: fit-content;
+    color: #000;
+    font-size: 1.2rem;
+}
+ul li ol {
+    list-style: none;
+}
+.main [data-content-type=row][data-appearance=contained] {
+    padding: 0 10px;
+    margin: 0 auto 20px;
 }
 
-.permanently h3::after {
-    position: absolute;
-    top: 2px;
-    bottom: auto;
-    left: auto;
-    right: -5px;
+@media (min-width: 576px) {
+    .main [data-content-type=row][data-appearance=contained] {
+        max-width:540px !important
+    }
+}
+
+@media (min-width: 768px) {
+    .main [data-content-type=row][data-appearance=contained] {
+        max-width:720px !important
+    }
+}
+
+@media (min-width: 992px) {
+    .main [data-content-type=row][data-appearance=contained] {
+        max-width:960px !important
+    }
+}
+
+@media (min-width: 1200px) {
+    .main [data-content-type=row][data-appearance=contained] {
+        max-width:1140px !important
+    }
+}
+
+@media (min-width: 1400px) {
+    .main [data-content-type=row][data-appearance=contained] {
+        max-width:1340px !important
+    }
+}
+
+.ul-content-list a {
+	margin: 0;
+    font-size: 1rem !important;
+    font-weight: normal !important;
+    display: block !important;
+    padding: 0 15px !important;
+    color: #0d6efd !important;
+text-decoration: underline !important;
+margin-bottom: 3px;
+}
+
+.voltage-table {
+    width: 40%;
+    border-collapse: collapse;
+}
+.voltage-table tbody tr:first-child th{
+    background-color: lightgrey;
+    text-align: center;
+}
+
+.voltage-table th,
+.voltage-table td {
+    border: 1px solid black;
+    border-width: 1px;
+    padding: 4px;
+    text-align: left;
+}
+
+.voltage-table td {
+    padding: 5px 5px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.voltage-table tr {
+    border: 1px solid black;
+    border-width: 1px;
+}
+
+ .circle {
     width: 20px;
     height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    content: "+";
-    color: #666;
-    font-size: 20px;
-    line-height: 0;
-    transition: transform 0.15s ease-out;
-}
-
-@keyframes rotate-forward {
-    0% {
-        transform: rotate(0deg);
-        content: "+";
-    }
-
-    50% {
-        content: "+";
-    }
-
-    100% {
-        transform: rotate(180deg);
-        content: "-";
-    }
-}
-
-@keyframes rotate-backward {
-    0% {
-        transform: rotate(180deg);
-        content: "-";
-    }
-
-    50% {
-        content: "-";
-    }
-
-    100% {
-        transform: rotate(0deg);
-        content: "+";
-    }
-}
-.permanently:hover h3::after,
-.permanently h3:hover::after {
-    animation: rotate-forward 0.25s ease-out forwards;
-}
-
-.permanently h3::after {
-    animation: rotate-backward 0.25s ease-out forwards;
-}
-.permanently:hover h3::after,
-.permanently h3:hover::after {
-    animation: rotate-forward 0.25s ease-out forwards;
-}
-
-.permanently h3 {
-    position: relative;
-    padding-left: 90px;
-    font-weight: bold;
-    line-height: 1.6;
-}
-
-.permanently h3 {
-    position: relative;
-    color: #666;
-    font-weight: bold;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 200ms linear;
-}
-
-.permanently h3:before {
-    position: absolute;
-    top: 2px;
-    left: 0;
-    content: '';
+    border: 2px solid #000;
+    border-radius: 50%;
+    background-color: transparent;
     display: inline-block;
-    white-space: pre-wrap;
-    max-width: 76px;
-    margin: 0 10px 0 0;
-    padding: 5px;
-    background: #9da6b5;
-    color: #fff;
-    vertical-align: middle;
-    font-size: .9rem;
-    line-height: 1;
 }
 
-.permanently h3.Nationwide:before {
-    content: 'Nationwide';
-}
-
-.permanently h3.Tokyo:before {
-    content: 'Tokyo';
-}
-
-.permanently h3.TokyoOkinawa:before {
-    content: 'Tokyo Okinawa';
-}
-
-.permanently h3.Hiroshima:before {
-    content: 'Hiroshima';
-}
-
-.store-block .permanently ul li>span {
-    display: block;
-}
-
-.permanently h3+div {
-    display: none;
-}
-
-.store-block .store-wrapper .permanently {
-    padding: 10px 0 10px 3%;
-}
-
-.store-block {
-    padding: 190px 0 0;
-    font-weight: 300;
-    line-height: 1.73rem;
-    font-size: 14px;
-    background: url(/static/frontend/Sutrix/BCC/en_US/images/img/back_store.jpg) no-repeat top 100px center;
-    font-family: -apple-system, BlinkMacSystemFont, "Yu Gothic Medium", "YuGothic", "Hiragino Sans W3", "Hiragino Kaku Gothic Pro", Meiryo, Osaka, "MS PGothic", "MS P Gothic", Verdana, Arial, Helvetica, sans-serif;
-    background-attachment: fixed !important;
-    background-size: 100% auto !important;
-    background-position-x: 50% !important;
-    background-position-y: 100px !important;
-}
-
-.store-block .max-width-600 {
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.store-block .max-width-792 {
-    max-width: 792px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.page-main-full-width .store-block>.row-full-width-inner {
-    max-width: 100%;
-}
-
-.store-block .store-wrapper>.pagebuilder-column-line {
-    flex-wrap: wrap;
-}
-
-.store-block .btn_more a span {
-    display: flex;
-    margin: 0 auto 50px;
-    color: #036eb8;
-    font-size: 17px;
-    line-height: 2;
-}
-
-.store-block .store-wrapper>.pagebuilder-column-line {
-    max-width: 1080px;
-    margin: 0 auto;
-}
-
-.store-block .store-wrapper {
-    background: linear-gradient(rgba(255, 255, 255, 0.75), white 30%);
-    background-size: 2500px auto;
-    padding: 0 15px;
-}
-
-.store-block h1 {
-    margin: 0 auto 50px;
-    padding-bottom: 10px;
-    padding-top: 50px;
-    max-width: 1080px;
-    width: 100%;
-    border-bottom: 1px solid #e2e2e2;
-    color: #999;
-    text-align: center;
-    letter-spacing: 0;
-    font-size: 2rem;
-    font-family: "Marcellus", sans-serif;
-}
-
-.store-block .message.seoul {
-    margin: 50px auto 110px;
-    width: 880px;
-}
-
-.store-block .message {
-    margin: 0 auto 80px;
-    line-height: 2rem;
-}
-
-.store-block .message.seoul img {
-    display: block;
-    margin: 0 auto 30px;
-    max-width: 100%;
-}
-
-.store-block .message.seoul img.mini {
-    width: 90%;
-}
-
-.store-block .message img {
-    max-width: 100%;
-    width: auto;
-}
-
-.store-block h2 {
-    margin: 0 auto 50px;
-    padding-bottom: 10px;
-    max-width: 1080px;
-    width: 100%;
-    border-bottom: 1px solid #e2e2e2;
-    color: #b28247;
-    text-align: center;
-    letter-spacing: 0.2rem;
-    font-size: 2rem;
-    line-height: 1.6;
-}
-
-.store-block h2 {
-    position: relative;
-    margin-bottom: 20px;
-    letter-spacing: 0;
-    font-size: 1.6rem;
-}
-
-.store-block h2[id^="anker_"] {
-    margin-top: -110px;
-    padding-top: 110px;
-}
-
-.store-block .ttl_department {
-    margin: 0 auto 30px;
-    width: 100%;
-    text-align: center;
-}
-
-.store-block .ttl_department img {
-    max-width: 600px;
-    width: 100%;
-}
-
-.store-block .store-wrapper .stores {
-    display: flex !important;
-    align-items: stretch !important;
-    justify-content: space-between !important;
-    gap: 40px !important;
-    flex-wrap: wrap !important;
-    flex-direction: unset !important;
-}
-
-.store-block .store-wrapper .stores .store {
-    padding: 0 15px !important;
-    width: calc(50% - 20px);
-    border: 1px solid #b28247;
-    position: relative;
-    margin-bottom: -20px;
-}
-
-.store-block .store-wrapper .stores .store .pagebuilder-banner-wrapper {
-    padding: 15px;
-}
-
-.store-block .store .pagebuilder-collage-content {
-    padding-left: 135px;
-}
-
-.store-block .store .pagebuilder-banner-wrapper {
-    background-size: 150px !important;
-}
-
-.store-block .pagebuilder-banner-wrapper .pagebuilder-overlay {
-    padding: 15px;
-}
-
-.store-block .store>div {
-    position: relative;
-    z-index: 9;
-}
-
-.store-block .store.store_tiara {
-    position: relative;
-    background: -webkit-gradient(linear,
-            right top,
-            left top,
-            color-stop(20%, #c9bc9c),
-            color-stop(50%, #fffbc4),
-            color-stop(80%, #c9bc9c));
-    background: -webkit-linear-gradient(right,
-            #c9bc9c 20%,
-            #fffbc4 50%,
-            #c9bc9c 80%);
-    background: linear-gradient(to left, #c9bc9c 20%, #fffbc4 50%, #c9bc9c 80%);
-}
-
-.store-block .store::before {
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    bottom: 0px;
-    left: 0px;
-    z-index: 0;
-    display: block;
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    content: "";
-    margin: auto;
-    background: right top / 150px no-repeat rgb(255, 255, 255);
-}
-
-.store-block .store .address {
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    bottom: 0px;
-    left: 0px;
-    z-index: 0;
-    display: block;
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    content: "";
-    margin: auto;
-    background: right top / 150px no-repeat rgb(255, 255, 255);
-}
-
-.store-block .store.tokyo::before {
-    background-image: url(/media/wysiwyg/stores/tokyo.png);
-}
-
-.store-block .store.kyoto::before {
-    background-image: url(/media/wysiwyg/stores/kyoto.png);
-}
-
-.store-block .store.osaka::before {
-    background-image: url(/media/wysiwyg/stores/osaka.png);
-}
-
-.store-block .store.nagoya::before {
-    background-image: url(/media/wysiwyg/stores/nagoya.png);
-}
-
-.store-block .store.fukuoka::before {
-    background-image: url(/media/wysiwyg/stores/fukuoka.png);
-}
-
-.store-block .store h3 {
-    margin-bottom: 10px;
-    color: #666;
-    font-weight: 600;
-    font-size: 1.2rem;
-    line-height: 1.4;
-}
-
-.store-block .postalCode::before {
-    display: inline-block;
-    content: "\3012";
-    font-family: "Arial Unicode MS", "Segoe UI Symbol";
-    margin-right: 5px;
-}
-
-.store-block .tel {
-    display: block;
-}
-
-.store-block .store a {
-    word-wrap: break-word;
-}
-
-.store-block p {
-    padding: 0 5%;
-    text-align: center;
-}
-
-.store-block .store p {
-    margin-bottom: 0;
-    padding: 0;
+th:first-child,
+td:first-child {
+    width: 60%;
     text-align: left;
 }
-
-.store-block .store_list .tokyo {
-    background-image: url(/static/frontend/Sutrix/BCC/en_US/images/img/store/tokyo.png);
-}
-
-.store-block .store_list .nagoya {
-    background-image: url(/static/frontend/Sutrix/BCC/en_US/images/img/store/nagoya.png);
-}
-
-.store-block .store_list .osaka {
-    background-image: url(/static/frontend/Sutrix/BCC/en_US/images/img/store/osaka.png);
-}
-
-.store-block .store_list .fukuoka {
-    background-image: url(/static/frontend/Sutrix/BCC/en_US/images/img/store/fukuoka.png);
-}
-
-.store-block .tel::before {
-    display: inline-block;
-    content: "TEL: ";
-    margin-right: 5px;
-}
-
-.store-block .permanently {
-    position: relative;
-    margin: 0 auto;
-    padding: 30px 0 80px;
-    max-width: 1080px;
-    width: 100%;
-}
-
-.store-block .permanently ul {
-    display: flex;
-    flex-wrap: wrap;
-    margin: 30px auto;
-    padding-bottom: 20px;
-    border-bottom: 1px dotted #aaa;
-}
-
-.store-block .permanently ul li {
-    margin-bottom: 20px;
-    padding: 0 0 0 3%;
-    min-height: 25px;
-    width: 50%;
-}
-
-.store-block .permanently ul li.barneys {
-    width: 100%;
-}
-
-.store-block .permanently ul li h3 {
-    position: relative;
-    color: #666;
-    font-weight: bold;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 200ms linear;
-}
-
-.store-block .permanently ul li h3 {
-    position: relative;
-    padding-left: 90px;
-    font-weight: bold;
-    line-height: 1.6;
-}
-
-.store-block .permanently ul li h3 .toggle-btn {
-    position: relative;
-    width: 12px;
-    height: 12px;
-    float: right;
-    margin-top: 7px;
-    padding: 0;
-    border: none;
-    background: none;
-}
-
-.store-block .permanently ul li h3 .toggle-btn::after,
-.store-block .permanently ul li h3 .toggle-btn::before {
-    content: "";
-    position: absolute;
-    background-color: #666;
-    transition: transform 0.25s ease-out;
-}
-
-.store-block .permanently ul li h3 .toggle-btn::before {
-    top: 0;
-    left: 50%;
-    width: 2px;
-    height: 100%;
-    transform: translateX(-50%);
-}
-
-.store-block .permanently ul li h3 .toggle-btn::after {
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    transform: translateY(-50%);
-}
-
-.store-block .permanently ul li h3 .toggle-btn:hover {
-    cursor: pointer;
-}
-
-.store-block .permanently ul li h3 .toggle-btn:hover::before {
-    transform: rotate(90deg);
-}
-
-.store-block .permanently ul li h3 .toggle-btn:hover::after {
-    transform: rotate(180deg);
-}
-
-.store-block .permanently ul li h3 .toggle-btn.active::before {
-    transform: translateX(-50%) rotate(90deg);
-}
-
-.store-block .permanently ul li h3 .toggle-btn.active::after {
-    transform: translateY(-50%) rotate(180deg);
-}
-
-.store-block .permanently ul {
-    display: flex;
-    flex-wrap: wrap;
-    margin: 30px auto;
-    padding-bottom: 20px;
-    border-bottom: 1px dotted #aaa;
-}
-
-.store-block .permanently ul li.barneys ul {
-    display: flex;
-    flex-wrap: wrap;
-    margin: 0 auto;
-    border-bottom: none;
-}
-
-.store-block .permanently ul li .address {
-    display: none;
-    padding: 5px 0 0 70px;
-    font-size: 0.9rem;
-}
-
-.store-block .permanently ul li.barneys ul li {
-    margin-bottom: 20px;
-    width: 50%;
-}
-
-.store-block .permanently ul li .address ul li {
-    padding: 0;
-}
-
-.store-block .permanently ul li .address span {
-    display: block;
-    margin: 5px auto;
-}
-
-.store-block .permanently ul li a {
-    position: relative;
-    display: block;
-    width: 100%;
-}
-
-.store-block .permanently ul li .address span {
-    display: block;
-    margin: 5px auto;
-}
-
-.store-block .permanently ul li:last-child,
-.store-block .permanently ul li:nth-last-child(2) {
-    margin-bottom: 0;
-}
-
-@media only screen and (max-width: 5000px) {
-    .store-block {
-        background-attachment: fixed;
-        background-size: 100% auto;
-    }
-}
-
-@media only screen and (max-width: 768px) {
-    .store-block .store-wrapper .stores .store {
-        display: block !important;
-        width: 100%;
-    }
-
-    .store-block {
-        padding-top: 60px;
-    }
-
-    .store-block h1 {
-        margin: 0 auto 30px;
-        width: 90%;
-        font-size: 1.6rem;
-    }
-
-    .store-block .message.seoul {
-        width: 90%;
-    }
-
-    .store-block {
-        background: #fff;
-    }
-
-    .store-block .permanently {
-        padding: 30px 0 50px;
-    }
-
-    .store-block .permanently ul {
-        width: 90%;
-    }
-
-    .store-block .permanently ul li h3 {
-        padding: 0 20px 0 90px;
-    }
-
-    .store-block .permanently ul li .address {
-        padding: 5px 0;
-    }
-
-    .store-block .permanently ul li .address ul {
-        width: 100%;
-    }
-
-    .store-block .permanently ul li .address ul li {
-        width: 100%;
-    }
-
-    .store-block .permanently ul li:nth-last-child(2) {
-        margin-bottom: 20px;
-    }
-
-    .store-block .permanently ul li {
-        width: 100%;
-    }
-}
-
-.store-block .tagPrefectures {
-    white-space: pre-wrap;
-    max-width: 76px;
-}
-
-/* Store Soul */
-.seoul-block {
-    margin: 12% auto 0;
-    padding: 50px 0;
-    background: linear-gradient(rgba(255, 255, 255, .75), white 30%);
-    text-align: center;
-}
-
-.seoul-block h1 img {
-    max-width: 100%;
-    width: auto;
-}
-
-.seoul-block.seoul .seoul-block-background {
-    background: url(/static/frontend/Sutrix/BCC/en_US/images/img/back_seoul.jpg) no-repeat top center;
-    background-size: 100% auto;
-}
-
-.seoul-block.seoul .seoul-block-background {
-    position: fixed;
-    top: 100px;
-    right: 0;
-    left: 0;
-    z-index: -2;
-    display: block;
-    height: 800px;
-    content: '';
-}
-
-.seoul-block.seoul h1 {
-    margin: 50px auto;
-    padding-bottom: 10px;
-    width: 900px;
-    border: none;
-}
-
-.seoul-block div.gallery {
-    overflow: auto;
-    margin: 0 auto 10px;
-    max-width: 940px;
-    width: 96%;
-    background: #efefef;
-}
-
-.seoul-block div.gallery figure {
-    display: block;
-    margin: 0 auto;
-    max-width: 100%;
-    width: auto;
-    text-align: center;
-    line-height: 0;
-}
-
-.seoul-block div.gallery figure img {
-    max-width: 100%;
-    width: auto;
-    height: auto;
-}
-
-.seoul-block div.gallery figure.mini {
-    margin: 60px auto 0;
-}
-
-.seoul-block div.gallery figcaption,
-.seoul-block div.gallery p {
-    margin: 30px auto;
-    color: #231815;
-    text-align: center;
-    font-size: 1.2rem;
-    line-height: 1.4;
-}
-
-.seoul-block div.gallery figure.mini img {
-    max-width: 640px;
-}
-
-.seoul-block div.gallery figcaption,
-.seoul-block div.gallery p {
-    margin: 30px auto;
-    color: #231815;
-    text-align: center;
-    font-size: 1.2rem;
-    line-height: 1.4;
-}
-
-.map_address {
-    margin: 0 auto 30px;
-    color: #231815;
-    text-align: left;
-    font-size: 1.1rem;
-    line-height: 2;
-}
-
-.map_address dl {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    margin: 0 auto;
-    width: 220px;
-}
-
-.map_address dl dt {
-    width: 40%;
-}
-
-.seoul-block div.gallery figcaption.map_address,
-.seoul-block div.gallery p.map_address {
-    margin: 0 auto 30px;
-}
-
-@media only screen and (max-width: 768px) {
-    .store-block .store-wrapper .stores .store .pagebuilder-banner-wrapper {
-        background-position: 5px 20px !important;
-    }
-
-    .store-block .store .pagebuilder-collage-content {
-        padding-left: 0;
-        padding-top: 105px;
-        margin: 0 -20px;
-    }
-
-    .store-block .store-wrapper>.pagebuilder-column-line>.pagebuilder-column.store_column {
-        width: 100% !important;
-        display: block !important;
-    }
-
-    .seoul-block.seoul .seoul-block-background {
-        position: absolute;
-        top: 50px;
-    }
-
-    .seoul-block div.gallery figure img {
-        width: 100%;
-    }
-
-    .seoul-block.seoul h1 {
-        width: 90%;
-    }
-
-    .seoul-block div.gallery figure.mini {
-        width: 80%;
-        height: auto;
-    }
-
-    .map_address {
-        color: rgba(35, 24, 21, .8);
-    }
-}
-
 </style>
