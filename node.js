@@ -700,6 +700,10 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
     clipFolderFiles.forEach(drone => {
         count++
         fileData[drone] = []
+        const rangeFile = path.join(inputDir, date, 'MCMOT', sortie, clip, drone, 'range.txt')
+        const rangeFileContent = fs.readFileSync(rangeFile, 'utf8');
+        const range = rangeFileContent.trim().split(',');
+        let startIndex = 0;
         if (mode === '4') {
             // MCMOT To Frames
             MCMOTToFrames(date, sortie, clip, drone, 50)
@@ -724,10 +728,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                 const processFile = async (img, index) => {
                     const imgURL = path.join(inputDir, date, 'MCMOT', sortie, clip, drone, 'Images', img);
                     let fileName = img.split('.')[0];
-                    const rangeFile = path.join(inputDir, date, 'MCMOT', sortie, clip, drone, 'range.txt')
-                    const rangeFileContent = fs.readFileSync(rangeFile, 'utf8');
-                    const range = rangeFileContent.trim().split(',');
-                    let startIndex = 0;
+                    
                     if (range.length > 1) {
                         startIndex = parseInt(range[1]) / 5
                     }

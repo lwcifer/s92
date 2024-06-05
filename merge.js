@@ -63,7 +63,8 @@ function mergeXML (folderDir, fileName) {
             // }
             for (const file of files) {
                 const filePath = path.join(folderPath, file);
-                const data = fs.readFileSync(filePath, 'utf8');
+                let data = fs.readFileSync(filePath, 'utf8');
+                data = data.replace("\ufeff", "");
                 const result = await parser.parseStringPromise(data);
                 if (result.root && result.root.object) {
                     root.root.object.push(...result.root.object.map(sanitizeXmlObject));
@@ -82,7 +83,7 @@ function mergeXML (folderDir, fileName) {
     });
 }
 
-// mergeXML('D:/FTP07/output_0601_A/240427/Train/MCMOT/07/0001/', '240427_0001')
-// mergeXML('D:/FTP08/output_0601_A/240429/Train/MCMOT/08/0001/', '240429_0001')
+// mergeXML('/Users/liam/Documents/Dabeeo/Data_S92/FTP07/out_macos00/240427/Train/MCMOT/07/0001/', '240427_0001')
+// mergeXML('/Users/liam/Documents/Dabeeo/Data_S92/FTP08/out_macos/240429/Train/MCMOT/08/0001/', '240429_0001')
 
 export {mergeXML}
