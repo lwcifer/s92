@@ -509,16 +509,7 @@ async function convert(params) {
                     });
                     if(sortieFiles.length > 0) {
                         sortieFiles.forEach(sortie => {
-                            let clipsPath = path.join(inputDir, date, 'MCMOT', sortie);
-                            let clipsFiles = fs.readdirSync(clipsPath);
-                            clipsFiles = clipsFiles.filter(object => {
-                                return fs.statSync(path.join(clipsPath, object)).isDirectory();
-                            });
-                            if(clipsFiles.length > 0) {
-                                clipsFiles.forEach(async clip => {
-                                    await convertMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, clip, mod)
-                                })
-                            }
+                            convertMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mod)
                         })
                     }
                 }
