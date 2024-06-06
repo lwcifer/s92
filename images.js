@@ -271,4 +271,95 @@ function renameFolderSync(oldPath, newPath) {
   });
 }
 
-export { drawText, drawTextMCMOT, drawBoundingBox, handleImageMoving, handleImageDET, handleImageMOT }
+// Function to handle image upload
+function handleImageUpload(fileInput, path) {
+  fs.readFile(fileInput, (err, data) => {
+      if (err) throw err;
+
+      loadImage(data).then((img) => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          // Save the canvas as an image file
+          const out = fs.createWriteStream(path);
+          const stream = canvas.createJPEGStream({quality: 1});
+          stream.pipe(out);
+          // out.on('finish', () => console.log('The image was saved.'));
+      }).catch((err) => {
+          console.error('Error loading image:', err);
+      });
+  });
+}
+
+// Function to handle image upload
+async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
+  return new Promise((resolve, reject) => {
+      try {
+          fs.readFile(fileInput, (err, data) => {
+              if (err) console.log(err);
+      
+              loadImage(data).then((img) => {
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  ctx.drawImage(img, 0, 0);
+                  // Draw bounding box and text
+                  let cc = 0
+                  objects.forEach((object, index) => {
+                      object = object.split(',')
+                      const minx = parseInt(object[3])
+                      const miny = parseInt(object[4])
+                      let width = parseInt(object[5]);
+                      let height = parseInt(object[6]);
+                      let xmax = minx + width;
+                      let ymax = miny + height;
+                      let xcenter = minx + width/2;
+                      let ycenter = miny + height/2;
+                      if (minx < 0) {
+                          xcenter = (minx + width)/2
+                          width = xcenter * 2
+                          console.log(object[3], 'xcenter', xcenter)
+                      }
+                      if (miny < 0) {
+                          ycenter = (miny + height)/2
+                          height = ycenter * 2
+                          console.log(object[4], 'ycenter', ycenter)
+                      }
+                      if (xmax > 1280) {
+                          xcenter = (minx + 1280)/2
+                          width = 1280 - minx
+                          console.log(object[3], 'xcenter', xcenter)
+                      }
+                      if (ymax > 720) {
+                          ycenter = (miny + 720)/2
+                          height = 720 - miny
+                          console.log(object[4], 'ycenter', ycenter)
+                      }
+
+                      let nem = object[1]
+                      nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
+                      const boxid = object[2]
+                      const color = getFixedColor(nem)
+                      drawTextMCMOT(ctx, nem, xcenter, ycenter, minx, xmax, miny, ymax, width, height);
+                      drawBoundingBox(ctx, xcenter, ycenter, width, height, color);
+                  });
+      
+                  // Save the canvas as an image file
+                  const out = fs.createWriteStream(path);
+                  const stream = canvas.createJPEGStream({quality: 1});
+                  stream.pipe(out);
+                  out.on('finish', () => {
+                      resolve();
+                  });
+                  
+              }).catch((err) => {
+                  console.error('Error loading image:', err);
+                  reject()
+              });
+          });
+      } catch (error) {
+          reject()
+      }
+  })
+}
+
+export { drawText, drawTextMCMOT, drawBoundingBox, handleImageBoxMCMOT, handleImageMoving, handleImageUpload, handleImageDET, handleImageMOT }

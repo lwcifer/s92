@@ -24,6 +24,7 @@ app.post('/api/data', async (req, res) => {
   }
 });
 
+
 // Chạy server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

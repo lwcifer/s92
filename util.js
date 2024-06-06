@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { PATH_STRING, categories, DRONE_DEFAULT_VALUES } from './contanst.js';
+import { PATH_STRING } from './contanst.js';
 
 function splitTextAndNumbers(input) {
   // Find all parts of the string that are either letters or digits
@@ -46,7 +46,7 @@ function valueToText(val) {
     }
 
     if (!isNaN(val) && val.includes('e')) {
-        // Chuyển đổi chuỗi thành số và định dạng với 15 chữ số thập phân
+        // Chuyển đổi chuỗi thành số và định dạng với 18 chữ số thập phân
         let num = parseFloat(val);
         return num.toFixed(18);
     }
@@ -151,15 +151,15 @@ function formatDate(date) {
 }
 
 function addDifferenceTime(root, difference) {
-  return root;
+    return root;
     let rootDate = new Date(root.split(' ')[0]);
 
     // Create a new Date object from the root to avoid modifying the original date
     let res = setTimeToDate(rootDate, root.split(' ')[1]);
-    //console.log('rootDate', res, root.split(' ')[1])
 
     // Add the difference in seconds to the new Date object
     res.setSeconds(res.getSeconds() + difference * 1);
+
     // Return the timestamp of the new date
     return formatDate(new Date(res));
 }
@@ -183,10 +183,8 @@ function addDifferenceTimeGetTime(root, difference) {
 
     // Add the difference in seconds to the new Date object
     res.setSeconds(res.getSeconds() + difference);
-    // Return the timestamp of the new date
-
     res = new Date(formatDate(new Date(res)))
-    // console.log('addDifferenceTimeGetTime:', rootDate, difference, res)
+
     return res.getTime();
 }
 
@@ -288,46 +286,6 @@ function checkPlanned(name) {
     return name == 'car_0' || name == 'car_1' || name == 'car_2'
 }
 
-function sortPromax(arr, start, timeDiff, check) {
-    let res = [];
-    let min;
-    let minItem;
-
-    for (let i = 0; i < arr.length; i++) {
-        const item = arr[i];
-        if (item && item.split(',')[0]) {
-            const num = addDifferenceTimeGetTime(item.split(',')[0], timeDiff, check);
-
-            if (num >= start) {
-                res.push(item);
-                // Sắp xếp các phần tử mới thêm vào `res`
-                for (let j = res.length - 1; j > 0; j--) {
-                    const g1 = addDifferenceTimeGetTime(res[j].split(',')[0], timeDiff, check);
-                    const g0 = addDifferenceTimeGetTime(res[j - 1].split(',')[0], timeDiff, check);
-                    if (g1 < g0) {
-                        [res[j], res[j - 1]] = [res[j - 1], res[j]];
-                    } else {
-                        break;
-                    }
-                }
-            } else {
-                // Lưu lại phần tử gần với `start` nhất nhưng nhỏ hơn `start`
-                if (!min || start - num < min) {
-                    min = start - num;
-                    minItem = item;
-                }
-            }
-        }
-    }
-
-    // Đưa phần tử nhỏ hơn `start` nhưng gần với `start` nhất vào đầu `res`
-    if (minItem) {
-        res = [minItem, ...res];
-    }
-    console.log('sortPromax: ', res.length)
-    return res;
-}
-
 function extraDataMCMOT(item, dr) {
     switch (dr) {
         case '2':
@@ -360,6 +318,6 @@ function convertNumberToAnyDigit (number, digit) {
     return number.toString().padStart(digit, '0');
 }
 
-export { checkPlanned, convertNumberToAnyDigit, getStartFrame, getFileName, mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, sortPromax, extraDataMCMOT, addDifferenceTime }
+export { checkPlanned, convertNumberToAnyDigit, getStartFrame, getFileName, mergeArrays, addDifferenceTimeGetTime, getFixedColor, valueToText, uCreateDirectory, createBaseForder, uFrameIndexToTime, timeDifference, exportXmlToFile, extraDataMCMOT, addDifferenceTime }
 
 

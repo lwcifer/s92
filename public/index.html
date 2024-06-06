@@ -56,6 +56,16 @@
         <button id="convertButton">Convert</button>
     </div>
 
+    <div id="logs"></div>
+    <script>
+        const logs = document.getElementById('logs');
+        const eventSource = new EventSource('/logs');
+
+        eventSource.onmessage = function(event) {
+            logs.innerHTML += event.data + '<br>';
+        };
+    </script>
+
     <script>
         async function convertButton() {
             try {
