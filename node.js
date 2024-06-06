@@ -219,7 +219,7 @@ function convertTxtToDet (date, droneName, clipName, fileInput, sortie, index, u
       imgURL = path.join(path.join(outDir, outputDir, 'Images_Temp'), fileInput);
 
       const pathOutImg = path.join(outDir, outputDETVisualizedPath, `${date}_${droneName}_${clipName}_${convertNumberToAnyDigit(index/5, 5)}.jpg`);
-
+      console.log('line', lines);
       await handleImageDET(imgURL, pathOutImg, lines)
       //return MOT content file
       const newContentMOT = lines.map(line => processMOTLine(line, convertNumberToAnyDigit(index, 5)));
@@ -786,7 +786,7 @@ async function convertTxtToMCMOT(date, sortie, clip, mode) {
                     for (let i = 0; i < droneImgFiles.length; i += 5) {
                         const img = droneImgFiles[i];
                         if (mode == '2') {
-                            processFile(img, i);
+                        processFile(img, i);
                             // promises.push(limit1(() => processFile(img, i)));
                         } else {
                             promises.push(limit(() => processFile(img, i)));
@@ -913,15 +913,15 @@ async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
 // Function to convert video to frames
 function convertToFramesDET(inputVideo, outputFramesDir, fps, fileName) {
   return new Promise((resolve, reject) => {
-      console.log('fileName', fileName)
-      exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} -qscale:v 2 -threads 0 ${outputFramesDir}/${fileName}_%05d.jpg`, (error, stdout, stderr) => {
-          if (error) {
-              console.log('error', error)
-              reject(error);
-              return;
-          }
-          
-          resolve();
+    
+      exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} -q:v 2 -threads 0 -start_number 0 ${outputFramesDir}/${fileName}_%08d.jpg`, (error) => {
+        if (error) {
+          console.log('error', error)
+          reject(error);
+          return;
+        }
+        
+        resolve();
       });
   });
 }

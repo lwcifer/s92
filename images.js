@@ -118,7 +118,7 @@ function handleImageDET(fileInput, pathDET, objects) {
 
           // Draw bounding box and text
           const objColor = getFixedColor(object[1] + '_' + object[2]);
-          drawText(ctx, categories[object[1].trim()], xcenter - width / 2 + 2, ycenter - height / 2 - 5);
+          drawTextMCMOT(ctx, categories[object[1].trim()], xcenter, ycenter, xmin, xmax, ymin, ymax, width, height);
           drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor);
         });
 
@@ -158,16 +158,20 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
           // Draw bounding box and text
-          const objectsOfIndex = objects.filter(object => object[0] == frameNo);
+          const objectsOfIndex = objects.filter(object => object[0]*5 == frameNo);
           if (objectsOfIndex.length > 0) {
             objectsOfIndex.forEach(object => {
               let xcenter = object[2] * 1;
               let ycenter = object[3] * 1;
               let width = object[4] * 1;
               let height = object[5] * 1;
+              let xmin = xcenter - width/2;
+              let xmax = xcenter + width/2;
+              let ymin = ycenter - height/2;
+              let ymax = ycenter + height/2;
 
               const objColor = getFixedColor(object[1]);
-              drawText(ctx, object[1], (xcenter - 35) + width / 2, ycenter - height / 2 - 5);
+              drawTextMCMOT(ctx, object[1], xcenter, ycenter, xmin, xmax, ymin, ymax, width, height);
               drawBoundingBox(ctx, xcenter, ycenter, width, height, objColor);
             });
           }
@@ -200,6 +204,7 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
   await convertToVideo(inputFramesDir, outputVideo, fps);
   console.log('Video conversion completed.', path.dirname(inputFramesDir));
   await renameFolderSync(inputFramesDir, path.join(path.dirname(inputFramesDir), 'Annotation MOT Visualized'));
+  console.log('Delete MOT visualized image.', path.dirname(inputFramesDir));
   await deletePngFiles(path.join(path.dirname(inputFramesDir), 'Annotation MOT Visualized'));
 }
 
@@ -243,7 +248,7 @@ function deletePngFiles(dirPath) {
               console.error(`Error deleting file: ${filePath}`, err);
               reject(err);
             } else {
-              console.log(`Deleted file: ${filePath}`);
+              //console.log(`Deleted file: ${filePath}`);
               resolve();
             }
           });
