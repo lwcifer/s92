@@ -45,6 +45,36 @@ const KLVInputFormat = [
     'offsetCornerLongitudePoint4'
 ]
 
+const KLVInputFormatMSL = [
+  'precisionTimeStamp',
+  'platformHeadingAngle',
+  'platformPitchAngle',
+  'platformRollAngle',
+  'imageSourceSensor',
+  'sensorLatitude',
+  'sensorLongitude',
+  'sensorTrueAltitude',
+  'Geoid Height',
+  'MSL',
+  'sensorHorizontalFieldOfView',
+  'sensorVerticalFieldOfView',
+  'sensorRelativeAzimuthAngle',
+  'sensorRelativeElevationAngle',
+  'sensorRelativeRollAngle',
+  'slantRange',
+  'frameCenterLatitude',
+  'frameCenterLongitude',
+  'frameCenterElevation',
+  'offsetCornerLatitudePoint1',
+  'offsetCornerLongitudePoint1',
+  'offsetCornerLatitudePoint2',
+  'offsetCornerLongitudePoint2',
+  'offsetCornerLatitudePoint3',
+  'offsetCornerLongitudePoint3',
+  'offsetCornerLatitudePoint4',
+  'offsetCornerLongitudePoint4'
+]
+
 const PPKInputFormat = [
     'precisionTimeStamp',
     'sensorLatitude',
@@ -57,4 +87,5 @@ export {
     MOTInputFormat,
     KLVInputFormat,
     PPKInputFormat,
+    KLVInputFormatMSL,
 };
