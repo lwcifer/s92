@@ -2,7 +2,6 @@ import fs from 'fs';
 import pLimit from 'p-limit';
 const limit = pLimit(100); 
 const limit1 = pLimit(1); 
-import { createCanvas, loadImage } from 'canvas';
 import path from 'path';
 import { exec } from 'child_process';
 
@@ -10,10 +9,6 @@ import { getFileName, getFixedColor, mergeArrays, getStartFrame, checkPlanned, v
 import { PATH_STRING } from './contanst.js';
 import { handleImageUpload, handleImageBoxMCMOT } from './images.js';
 import { mergeXML } from './merge.js';
-
-// Create a canvas and context
-const canvas = createCanvas(500, 500);
-const ctx = canvas.getContext('2d');
 
 function createDirectory(x, outDir) {
     uCreateDirectory.call(this, x, outDir);
