@@ -308,7 +308,6 @@ async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
                   canvas.height = img.height;
                   ctx.drawImage(img, 0, 0);
                   // Draw bounding box and text
-                  let cc = 0
                   objects.forEach((object, index) => {
                       object = object.split(',')
                       const minx = parseInt(object[3])
@@ -341,8 +340,8 @@ async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
                       }
 
                       let nem = object[1]
-                      nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
-                      const boxid = object[2]
+                      nem = parseInt(nem.split('_')[1]) + 1
+                      // const boxid = object[2]
                       const color = getFixedColor(nem)
                       drawTextMCMOT(ctx, nem, xcenter, ycenter, minx, xmax, miny, ymax, width, height);
                       drawBoundingBox(ctx, xcenter, ycenter, width, height, color);

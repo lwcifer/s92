@@ -26,14 +26,7 @@ async function MCMOTToFrames(date = '240427', sortie, clip = '0007', drone = '3'
 }
 
 function contentMCMOT(date, sortie, drone, clip, segments, inputDir, fps) {
-    let resultTargetMain = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
-    let resultTargetBox = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
-    let resultTargetBoxPPK = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
-    let resultTargetPos = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
-
     let xxx = []
-    const compositeKey = {}
-    const compositeError = []
     const txtFile = path.join(inputDir, date, 'MCMOT', sortie, drone, clip, 'range.txt')
     const txtFileContent = fs.readFileSync(txtFile, 'utf8');
     const objs = txtFileContent.trim().split(',');
@@ -69,7 +62,18 @@ function contentMCMOT(date, sortie, drone, clip, segments, inputDir, fps) {
     console.log('segments.length', sortie, drone, clip, segments.length)
     if(segments) xxx = mergeArrays(segments, lines, ppk, speedData, beacon, drone, rootTime, startFrame, startIndex, fps)
 
+    return exportMcmotXML(xxx, drone, clip)
+}
+let couu = 0
+function exportMcmotXML(xxx, drone, clip) {
+    couu++
+    const compositeKey = {}
+    const compositeError = []
     const ck = {}
+    let resultTargetMain = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
+    let resultTargetBox = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
+    let resultTargetBoxPPK = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
+    let resultTargetPos = '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n';
     for (let i = 0; i < xxx.length; i++) {
         const values = xxx[i].segment.split(",");
         const ppk = xxx[i].ppk.split(",");
@@ -80,8 +84,9 @@ function contentMCMOT(date, sortie, drone, clip, segments, inputDir, fps) {
         const startFrame = xxx[i].startFrame;
         const startIndex = xxx[i].startIndex;
         let nem = valueToText(values[1])
-        nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
-        let box = `${parseInt(values[2]) + 1}${drone}${parseInt(clip)}`
+        // nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
+        // let box = `${parseInt(values[2]) + 1}${drone}${parseInt(clip)}`
+        let box = nem
         const frameIndex = (parseInt(values[0]) - startFrame)/5 + startIndex
         const isPlanned = checkPlanned(nem)
         // Check duplicate keys
@@ -245,6 +250,7 @@ function contentMCMOT(date, sortie, drone, clip, segments, inputDir, fps) {
     resultTargetMain += '</root>';
     resultTargetPos += '</root>';
     console.log('compositeError: ', compositeError)
+    console.log('couucouucouu: ', couu)
     return [resultTargetBox, resultTargetMain, resultTargetPos, resultTargetBoxPPK];
 }
 
