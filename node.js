@@ -42,7 +42,7 @@ async function convert(params) {
                     });
                     if(sortieFiles.length > 0) {
                         sortieFiles.forEach(sortie => {
-                            convertMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mod)
+                            convertMCMOT(inputDir, outDir, fps, date, sortie, mod)
                         })
                     }
                 }

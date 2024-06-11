@@ -38,8 +38,8 @@ function contentMCMOT(date, sortie, drone, clip, segments, inputDir, fps) {
 
     // Read the file content synchronously
     const fileKlvURL =  `${inputDir}/${date}/MCMOT/${sortie}/${drone}/${clip}/META_KLV.csv`;
-    const filePpkURL =  `${inputDir}/${date}/MCMOT/${sortie}/${drone}/${clip}/META_PPK.csv`;
-    const fileSpeedURL =  `${inputDir}/${date}/MCMOT/${sortie}/${drone}/${clip}/META_LOG.csv`;
+    const filePpkURL =  `${inputDir}/${date}/MCMOT/${sortie}/${drone}/META_PPK.csv`;
+    const fileSpeedURL =  `${inputDir}/${date}/MCMOT/${sortie}/${drone}/META_LOG.csv`;
     const fileBeacondURL =  `${inputDir}/${date}/MCMOT/${sortie}/META_BEACON.csv`;
     const fileKvlContent = fs.readFileSync(fileKlvURL, 'utf8');
     const filePpkContent = fs.readFileSync(filePpkURL, 'utf8');
@@ -64,9 +64,7 @@ function contentMCMOT(date, sortie, drone, clip, segments, inputDir, fps) {
 
     return exportMcmotXML(xxx, drone, clip)
 }
-let couu = 0
 function exportMcmotXML(xxx, drone, clip) {
-    couu++
     const compositeKey = {}
     const compositeError = []
     const ck = {}
@@ -83,7 +81,7 @@ function exportMcmotXML(xxx, drone, clip) {
         const drone = xxx[i].drone;
         const startFrame = xxx[i].startFrame;
         const startIndex = xxx[i].startIndex;
-        let nem = valueToText(values[1])
+        let nem = valueToText(values[1].split('_')[1])
         // nem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
         // let box = `${parseInt(values[2]) + 1}${drone}${parseInt(clip)}`
         let box = nem
@@ -99,7 +97,7 @@ function exportMcmotXML(xxx, drone, clip) {
         compositeKey[key] = 1
 
         //add data to targetMain
-        if (!ck[values[1] + values[2]] ) {
+        if (!ck[values[1]] ) {
             let category = '0'
             switch (valueToText(values[1]).split('_')[0]) {
                 case 'bus':
@@ -140,22 +138,18 @@ function exportMcmotXML(xxx, drone, clip) {
         if (minx < 0) {
             cx = (minx + bwidth)/2
             bwidth = cx * 2
-            console.log('cxxxxxxxxxx', values[0], cx)
         }
         if (miny < 0) {
             cy = (miny +  bheight)/2
             bheight = cy * 2
-            console.log('cyyyyyyyyyy', values[0],  cy)
         }
         if (xmax > 1280) {
             cx = (minx + 1280)/2
             bwidth = 1280 - minx
-            console.log('cxxxxxxxxxx', values[0], cx)
         }
         if (ymax > 720) {
             cy = (miny + 720)/2
             bheight = 720 - miny
-            console.log('cyyyyyyyyyy', values[0], cy)
         }
 
         const isMSL = klv.length === 31 
@@ -250,7 +244,7 @@ function exportMcmotXML(xxx, drone, clip) {
     resultTargetMain += '</root>';
     resultTargetPos += '</root>';
     console.log('compositeError: ', compositeError)
-    console.log('couucouucouu: ', couu)
+    console.log('clip ', clip, ', drone ', drone, ' : ',xxx.length, ' boxs')
     return [resultTargetBox, resultTargetMain, resultTargetPos, resultTargetBoxPPK];
 }
 
@@ -303,6 +297,7 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
                     let droneImgFiles = fs.readdirSync(path.join(inputDir, date, 'MCMOT', sortie, drone, clip, 'Images'));
                     droneImgFiles = droneImgFiles.sort((a, b) => a.localeCompare(b));
                     if(droneImgFiles.length > 0) {
+                        let frameCount = 0
                         const processFile = async (img, index) => {
                             const imgURL = path.join(inputDir, date, 'MCMOT', sortie, drone, clip, 'Images', img);
                             let fileName = img.split('.')[0];
@@ -318,6 +313,7 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
                             const txtFile = `${inputDir}/${date}/MCMOT/${sortie}/${drone}/${clip}/TXT/${txtFileName}.txt`;
                             let objs = [];
                             if (fs.existsSync(txtFile)) {
+                                frameCount++
                                 const txtFileContent = fs.readFileSync(txtFile, 'utf8');
                                 objs = txtFileContent.trim().split('\n');
                                 fileData[drone][clip] = [...fileData[drone][clip], ...objs];
@@ -350,7 +346,7 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
                                 }
                             }
                             await Promise.all(promises);
-                            console.log("Hoàn thành xử lý clip", clip, 'drone', drone, countImg, count);
+                            console.log("Hoàn thành xử lý clip", clip, 'drone', drone, ' : ', frameCount, ' frames ', countImg, count);
                             if (mode === '5') {
                                 countImg++
                                 if (countImg == count) {
@@ -412,8 +408,9 @@ function convertToFramesMCMOT(inputVideo, outputFramesDir, fps) {
     });
 }
 
-async function convertMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode) {
+async function convertMCMOT(inputDir, outDir, fps, date, sortie, mode) {
     try {
+        const digitFileName = 5
         await convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode)
     } catch (error) {
         console.error(error)

@@ -321,26 +321,26 @@ async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
                       if (minx < 0) {
                           xcenter = (minx + width)/2
                           width = xcenter * 2
-                          console.log(object[3], 'xcenter', xcenter)
+                          console.log(minx, 'xcenter', xcenter)
                       }
                       if (miny < 0) {
                           ycenter = (miny + height)/2
                           height = ycenter * 2
-                          console.log(object[4], 'ycenter', ycenter)
+                          console.log(miny, 'ycenter', ycenter)
                       }
                       if (xmax > 1280) {
                           xcenter = (minx + 1280)/2
                           width = 1280 - minx
-                          console.log(object[3], 'xcenter', xcenter)
+                          console.log(xmax, 'xcenter', xcenter)
                       }
                       if (ymax > 720) {
                           ycenter = (miny + 720)/2
                           height = 720 - miny
-                          console.log(object[4], 'ycenter', ycenter)
+                          console.log(ymax, 'ycenter', ycenter)
                       }
 
                       let nem = object[1]
-                      nem = parseInt(nem.split('_')[1]) + 1
+                      nem = nem.split('_')[1]
                       // const boxid = object[2]
                       const color = getFixedColor(nem)
                       drawTextMCMOT(ctx, nem, xcenter, ycenter, minx, xmax, miny, ymax, width, height);
