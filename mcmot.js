@@ -16,7 +16,7 @@ function createDirectory(x, outDir) {
 
 async function MCMOTToFrames(inputDir, date = '240427', sortie, clip = '0007', drone = '3', fps = 10) {
     const clipDir = path.join(inputDir, date, 'MCMOT', sortie, drone, clip);
-    const outputDir = path.join(date, 'MCMOT', sortie, clip, drone, 'Images');
+    const outputDir = path.join(date, 'MCMOT', sortie, drone, clip,  'Images');
 
     if(fs.readdirSync(path.join(clipDir)).length === 0 ) return;
     const videoUrl = path.join(clipDir, getFileName(clipDir, '.mp4'));
@@ -251,7 +251,7 @@ function exportMcmotXML(xxx, drone, clip) {
 let count = 0
 let countImg = 0
 let countXml = 0
-async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode) {
+async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode, limit) {
     let fileData = {};
     
     let droneFolderPath = path.join(inputDir, date, 'MCMOT', sortie);
@@ -394,24 +394,24 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
 }
 
 function convertToFramesMCMOT(inputVideo, outputFramesDir, fps) {
-    // const ffmpegCommand = `ffmpeg -i ${inputVideo} -vf -qscale:v 2 -threads 0 "select='between(n\\,${startFrame}\\,${endFrame})',fps=${fps}" ${outputFramesDir}/%05d.jpg`;
+    // const ffmpegCommand = `ffmpeg -i ${inputVideo} -vf -q:v 2 -threads 0 "select='between(n\\,${startFrame}\\,${endFrame})',fps=${fps}" ${outputFramesDir}/%05d.jpg`;
     return new Promise((resolve, reject) => {
-        exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} -qscale:v 2 -threads 0 ${outputFramesDir}/%05d.jpg`, (error, stdout, stderr) => {
+        exec(`ffmpeg -i ${inputVideo} -vf fps=${fps} -q:v 2 -threads 0 -start_number 0 ${outputFramesDir}/%05d.jpg`, (error) => {
             if (error) {
                 console.log('error', error)
                 reject(error);
                 return;
             }
-            
+
             resolve();
         });
     });
 }
 
-async function convertMCMOT(inputDir, outDir, fps, date, sortie, mode) {
+async function convertMCMOT(inputDir, outDir, fps, date, sortie, mode,limit) {
     try {
         const digitFileName = 5
-        await convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode)
+        await convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode, limit)
     } catch (error) {
         console.error(error)
     }

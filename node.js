@@ -13,6 +13,7 @@ async function convert(params) {
         const inputDir = params.input;
         const outDir = params.output;
         const mod = params.mode;
+        const limit = params.limit;
         const fps =params.fps;
         const klvTimeDifference =params.klvtimedifference;
         const ppkTimeDifference =params.ppktimedifference;
@@ -42,7 +43,7 @@ async function convert(params) {
                     });
                     if(sortieFiles.length > 0) {
                         sortieFiles.forEach(sortie => {
-                            convertMCMOT(inputDir, outDir, fps, date, sortie, mod)
+                            convertMCMOT(inputDir, outDir, fps, date, sortie, mod, limit)
                         })
                     }
                 }

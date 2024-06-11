@@ -49,9 +49,11 @@
         <div class="item">
             <label for="fps">Limit time</label>
             <select id="limit" name="limit">
-                <option value="">All</option>
+                <option value="">No limit</option>
                 <option value="1">5s</option>
                 <option value="2">10s</option>
+                <option value="3">20s</option>
+                <option value="4">30s</option>
             </select>
         </div>
         <div class="item">
@@ -83,6 +85,7 @@
                 const output = document.getElementById('outputFolderPath').value.trim();
                 const fps = document.getElementById('fps').value.trim();
                 const mode = document.getElementById('mode').value.trim();
+                const limit = document.getElementById('limit').value.trim();
                 const ppktimedifference = document.getElementById('ppkTimeDifference').value.trim();
                 const klvtimedifference = document.getElementById('klvTimeDifference').value.trim();
                 const startTime = new Date().getTime();
@@ -97,7 +100,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ input, output, fps, mode, ppktimedifference, klvtimedifference })
+                    body: JSON.stringify({ input, output, fps, mode, limit, ppktimedifference, klvtimedifference })
                 });
 
                 if (!response.ok) {
