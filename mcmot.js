@@ -14,8 +14,8 @@ function createDirectory(x, outDir) {
     uCreateDirectory.call(this, x, outDir);
 }
 
-async function MCMOTToFrames(date = '240427', sortie, clip = '0007', drone = '3', fps = 10) {
-    const clipDir = path.join(inputDir, date, 'MCMOT', sortie, clip, drone);
+async function MCMOTToFrames(inputDir, date = '240427', sortie, clip = '0007', drone = '3', fps = 10) {
+    const clipDir = path.join(inputDir, date, 'MCMOT', sortie, drone, clip);
     const outputDir = path.join(date, 'MCMOT', sortie, clip, drone, 'Images');
 
     if(fs.readdirSync(path.join(clipDir)).length === 0 ) return;
@@ -277,7 +277,7 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
                 let startIndex = 0;
                 if (mode === '4') {
 
-                    MCMOTToFrames(date, sortie, clip, drone, 50)
+                    MCMOTToFrames(inputDir, date, sortie, clip, drone, 50)
 
                 } else {
                     const droneOutDir = path.join(date, PATH_STRING.train,'MCMOT', sortie, '0001', drone)
