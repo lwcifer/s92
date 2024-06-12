@@ -251,7 +251,7 @@ function exportMcmotXML(xxx, drone, clip) {
 let count = 0
 let countImg = 0
 let countXml = 0
-async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode, limit) {
+async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sortie, mode, limitTime) {
     let fileData = {};
     
     let droneFolderPath = path.join(inputDir, date, 'MCMOT', sortie);
@@ -261,6 +261,7 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
         return fs.statSync(path.join(droneFolderPath, object)).isDirectory();
     });
     droneFolderFiles.forEach(drone => {
+        let limitX = limitTime * 10
         if (!fileData[drone]) fileData[drone] = {}
         let clipsPath = path.join(inputDir, date, 'MCMOT', sortie, drone);
         let clipsFiles = fs.readdirSync(clipsPath);
@@ -336,7 +337,8 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
                         const processFiles = async () => {
                             console.log("Đang xử lý clip", clip, 'drone', drone);
                             const promises = [];
-                            for (let i = 0; i < droneImgFiles.length; i += 5) {
+                            let i = 0
+                            while (i < droneImgFiles.length && limitX > 0) {
                                 const img = droneImgFiles[i];
                                 if (mode == '2') {
                                     processFile(img, i);
@@ -344,6 +346,8 @@ async function convertTxtToMCMOT(inputDir, outDir, fps, digitFileName, date, sor
                                 } else {
                                     promises.push(limit(() => processFile(img, i)));
                                 }
+                                limitX--
+                                i += 5
                             }
                             await Promise.all(promises);
                             console.log("Hoàn thành xử lý clip", clip, 'drone', drone, ' : ', frameCount, ' frames ', countImg, count);
