@@ -40,7 +40,8 @@ async function convert(params) {
                     mod,
                     klvTimeDifference,
                     ppkTimeDifference,
-                    fps
+                    fps,
+                    limit
                   }
                   await convertDETMOT(params);
                 }

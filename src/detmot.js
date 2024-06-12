@@ -15,12 +15,14 @@ let mod = '';
 let ppkTimeDifference = 0;
 let klvTimeDifference = 0;
 let fps = 50;
+let limit = '';
 
 let indexOfKLV = 1;
 let indexOfPPK = 1;
 let indexOfLog = 1;
 let klvInputFormatUsed = [];
 let isLabeled = false;
+let indexLimitLabel = null;
 let labelClipDatas = [];
 let lastData = [];
 
@@ -111,13 +113,13 @@ function convertTxtToDet(date, droneName, clipName, fileInput, sortie, lines, in
             const file = fileInput.split('.')[0];
             const sortieOutput = sortie.split('_')[1] || sortie;
             
-            console.log('lines', labelClipDatas.length - 2)
-            if (lines.length > 0) {
+            if (!isLabeled && lines.length > 0) {
                 isLabeled = true;
+                indexLimitLabel = limit ? index*1 + limit*fps : indexLimitLabel;
             }
             const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, droneName, sortieOutput, clipName);
             let imgURL = '';
-            if (isLabeled) {
+            if (isLabeled && (!indexLimitLabel || indexLimitLabel >= index)) {
                 const timeOfFile = frameIndexToTime(addDifferenceTime(linesKLV[1][0], klvTimeDifference), index * 1);
                 let minDifferenceKLV = Infinity;
                 let minDifferencePPK = Infinity;
@@ -253,7 +255,6 @@ function convertInputToDETMOT(date, drone, sortie, clip, droneDir, unplanned) {
             const clipsSplitFiles = fs.readdirSync(path.join(clipDir, 'videos'));
 
             if (mod === '6' && clipsSplitFiles.length > 0) {
-
                 for (const file of clipsSplitFiles) {
                     const videoUrl = path.join(clipDir, 'videos', file);
                     const fileName = file.split('.')[0];
@@ -271,7 +272,7 @@ function convertInputToDETMOT(date, drone, sortie, clip, droneDir, unplanned) {
                 return;
             }
             // Read the file content synchronously
-            labelClipDatas = fs.readFileSync(fileXMLURL, 'utf8').split('\n');
+            labelClipDatas = fs.readFileSync(fileXMLURL, 'utf8').trim().split('\n');
             const imagesFiles = fs.readdirSync(imagesPath);
             imagesFiles.sort((a, b) => a.localeCompare(b)); // sort by name ascending
             // Process each .txt file
@@ -290,6 +291,7 @@ function convertInputToDETMOT(date, drone, sortie, clip, droneDir, unplanned) {
             for (let index = 0; index < imagesFiles.length; index = index + 5) {
                 const file = imagesFiles[index];
                 const lines = labelClipDatas.filter((item) => item.split(',')[0] == index && item !== '');
+                indexLimitLabel = labelClipDatas[labelClipDatas.length-1].split(',')[0]*1;
                 const imageInputDir = path.join(inputDir, date, 'DETMOT', plannedText, drone, sortie, clip, 'Images_Temp')
                 const [contentLine, imgURL] = await convertTxtToDet(date, drone, clip, file, sortie, lines, index, imageInputDir, unplanned);
                 if (imgURL) {
@@ -376,12 +378,6 @@ function processMOTLine(line, fileName) {
     return MOTOutputFormat.map(item => newValues[item]);
 }
 
-function convertTxtToPlanned() {
-    return new Promise(async (resolve, reject) => {
-
-    })
-}
-
 function convertMCMOTToPlanned(date, drone, sortie, clip, droneDir) {
     return new Promise(async (resolve, reject) => {
         try{
@@ -460,6 +456,8 @@ async function convertDETMOT(params) {
     klvTimeDifference = params.klvTimeDifference;
     fps = params.fps;
     mod = params.mod;
+    limit = params.limit;
+
     const date = params.date
     const DETMOTFolder = fs.existsSync(`${inputDir}/${date}/DETMOT`) && fs.readdirSync(`${inputDir}/${date}/DETMOT`).filter(item => fs.statSync(path.join(`${inputDir}/${date}/DETMOT`, item)).isDirectory());
 
