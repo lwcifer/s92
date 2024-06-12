@@ -24,13 +24,25 @@ async function convert(params) {
             fs.mkdirSync(outDir);
         }
 
-        const filesDate = fs.readdirSync(inputDir);
+        const filesDate = fs.readdirSync(inputDir).filter(item => {
+          return fs.statSync(path.join(inputDir, item)).isDirectory()
+        });
+
         if(filesDate.length > 0) {
           for(const date of filesDate) {
                 createBaseForder(path.join(outDir, date));
                 
-                if(!mod || mod === '1') {
-                  await convertDETMOT(inputDir, date, outDir, klvTimeDifference, ppkTimeDifference, fps);
+                if(!mod || mod === '1' || mod === '6') {
+                  const params = {
+                    inputDir,
+                    date,
+                    outDir,
+                    mod,
+                    klvTimeDifference,
+                    ppkTimeDifference,
+                    fps
+                  }
+                  await convertDETMOT(params);
                 }
 
                 if(!mod || mod === '2' || mod === '4' || mod === '5') {
