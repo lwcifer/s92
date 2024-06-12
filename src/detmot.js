@@ -383,7 +383,7 @@ function convertMCMOTToPlanned(date, drone, sortie, clip, droneDir) {
         try{
             const imagesPath = path.join(droneDir, clip, 'images');
             const imagesFiles =  fs.readdirSync(imagesPath).sort((a,b) => a - b);
-            const plannedText = 'planned';
+            const plannedText = 'Planned';
             //get Content metadata klv
             const inputKlvDir = path.join(inputDir, date, 'Metadata', 'KLV', 'FTP_'+sortie, convertNumberToAnyDigit(drone, 2));
             const klvFileUrl = path.join(inputKlvDir, `FTP${sortie}_${convertNumberToAnyDigit(drone, 2)}_${clip * 1}_${date}.csv`);
@@ -393,7 +393,7 @@ function convertMCMOTToPlanned(date, drone, sortie, clip, droneDir) {
             isLabeled = false;
             const motImgs = [];
             const motContentFile = [];
-            const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, 'planned', drone, sortie, clip);
+            const outputDir = path.join(date, PATH_STRING.train, PATH_STRING.det_mot, plannedText, drone, sortie, clip);
             const outputImagePath = path.join(outputDir, 'Images');
             if (!fs.existsSync(outDir + outputImagePath)) {
                 createDirectory(outputImagePath)
