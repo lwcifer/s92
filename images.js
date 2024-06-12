@@ -341,8 +341,9 @@ async function handleImageBoxMCMOT(fileInput, path, objects, fileslength) {
 
                       let nem = object[1]
                       nem = nem.split('_')[1]
+                      const fullnem = nem.split('_')[0] + '_' + (+nem.split('_')[1] + 1)
                       // const boxid = object[2]
-                      const color = getFixedColor(nem)
+                      const color = getFixedColor(fullnem)
                       drawTextMCMOT(ctx, nem, xcenter, ycenter, minx, xmax, miny, ymax, width, height);
                       drawBoundingBox(ctx, xcenter, ycenter, width, height, color);
                   });
