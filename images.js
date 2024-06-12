@@ -138,16 +138,15 @@ function handleImageDET(fileInput, pathDET, objects) {
 
 // Function to handle image upload
 async function handleImageMOT(fileInputs, outputDir, objects, file) {
-  console.log('Processing images...', fileInputs.length);
+  console.log('Processing images...', fileInputs.length, objects.length);
   if(fileInputs.length === 0) return;
   const promises = fileInputs.map((fileInput, index) => {
     const fileName = fileInput[1].split('.')[0];
     const frameNo = fileInput[2]/5; // Get the file name from the file input
-
     const objectsOfIndex = objects.filter(object => object[0] == frameNo);
-    if(objectsOfIndex.length == 0) {
-      return;
-    }
+    // if(objectsOfIndex.length == 0) {
+    //   return;
+    // }
     
     return new Promise((resolve, reject) => {
       fs.readFile(fileInput[0], (err, data) => {
@@ -158,7 +157,6 @@ async function handleImageMOT(fileInputs, outputDir, objects, file) {
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
           // Draw bounding box and text
-          const objectsOfIndex = objects.filter(object => object[0]*5 == frameNo);
           if (objectsOfIndex.length > 0) {
             objectsOfIndex.forEach(object => {
               let xcenter = object[2] * 1;
