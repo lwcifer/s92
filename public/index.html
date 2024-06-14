@@ -13,11 +13,13 @@
     <h1>Dabeeo <span>S92</span></h1>
     <span id="bg"></span>
     <div class="loading-container">
-        <h3>
-          Processing...
-        </h3>
-        <div class="loading-wrapper">
-          <div class="loader"></div>
+        <div class="loading-header">
+            <h3>
+            Processing...
+            </h3>
+            <div class="loading-wrapper">
+            <div class="loader"></div>
+            </div>
         </div>
         <div class="logs_content" id="logsContent">
 
@@ -95,11 +97,14 @@
                 if (!1) {
                     throw new Error('No folder selected');
                 }
-                const logElement = document.getElementById('logsContent');;
+                const logElement = document.getElementById('logsContent');
                 const eventSource = new EventSource('/api/logs');
-                
+                logElement.scrollTop = logElement.scrollTop;
+                console.log('22222', logElement.scrollTop , logElement.scrollHeight);
                 eventSource.onmessage = function(event) {
                     logElement.innerText += event.data + '\n';
+                    logElement.scrollTop = logElement.scrollHeight;
+                    console.log(logElement.scrollTop , logElement.scrollHeight);
                 };
 
                 eventSource.onerror = function(event) {

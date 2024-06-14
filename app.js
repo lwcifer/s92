@@ -74,7 +74,7 @@ fs.watch('./logs/app.log', { encoding: 'buffer' }, (eventType, filename) => {
         return;
       }
 
-      const logMessage = `${new Date(logEntry.timestamp).toLocaleString()} - ${logEntry.message}\n`;
+      const logMessage = `${logEntry.message}\n`;
 
       // Send new log entry to all connected clients
       clients.forEach(client => client.write(`data: ${logMessage}\n\n`));
